@@ -17,8 +17,8 @@ const uint16_t FRAME_TIME = 33;
 // WiFi Configuration
 // ---------------------------
 
-const char* WIFI_SSID = "KATARIA 4G";
-const char* WIFI_PASSWORD = "Sudha@123";
+const char* WIFI_SSID = "WIFI_NAME";
+const char* WIFI_PASSWORD = "WIFI_PASS";
 
 // Replace with your computer's IP address
 const char* SERVER_URL = "http://192.168.1.34:5000/spotify";
