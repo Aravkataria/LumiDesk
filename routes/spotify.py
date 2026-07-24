@@ -1,7 +1,6 @@
 from fastapi import APIRouter
 
-from spotify_service import spotify
-
+from services.media_service import media
 
 router = APIRouter(
     prefix="/api",
@@ -10,6 +9,6 @@ router = APIRouter(
 
 
 @router.get("/spotify")
-def current_song():
+def spotify():
 
-    return spotify.get_json()
+    return media.get_song()

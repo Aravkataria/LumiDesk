@@ -1,8 +1,0 @@
-{
-    "access_token": "BQCRoX9X5ppfsqgI_8OOH2iYraFNB3AqcDwIGli-lQBGK1I1y0doLHslaMStMZJ4rYNIU5ci6Pwjjj9l96yGAAnAhNv-KluNONmsv1PASvys5JNlc_tXA8V4Yq6ivvAS7SyJf5IPXFz7wASXnNQO2aQMQZ5i7mELSHpV0H3z4b_9ZCdv1XHlq2B01BezULxHGvlQAvn-oGd9sx2aPkh0VywL99nIpKTu3qQz1Ni_tqZAHs_7CsJAiKVSJxdY",
-    "token_type": "Bearer",
-    "expires_in": 3600,
-    "refresh_token": "AQDo3wdKo0j-0xfLo96_0HKixiTs55xnLw_ezrt7l-iA4JLOwV01IkTq6sBvJTKP_K7oMQ147PGWWIeiH-0FTm5FHg91z_3-Q2OCkrH757a0pNp7A7QVituNalUdrqITnGU",
-    "scope": "user-read-playback-state user-read-currently-playing",
-    "expires_at": 1784843035
-}

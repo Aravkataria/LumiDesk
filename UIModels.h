@@ -17,15 +17,17 @@ struct SongInfo
 {
     String title;
     String artist;
+    String album;
+
+    String currentLyric;
+    String nextLyric;
 
     uint32_t duration = 0;
-
-    // Actual Spotify progress
     uint32_t progress = 0;
 
     bool playing = false;
+    bool hasLyrics = false;
 
-    // Animated progress (0.0 -> 1.0)
     float animatedProgress = 0.0f;
 };
 

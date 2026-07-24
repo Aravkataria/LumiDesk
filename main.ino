@@ -20,8 +20,11 @@ const uint16_t FRAME_TIME = 33;
 const char* WIFI_SSID = "KATARIA 4G";
 const char* WIFI_PASSWORD = "Sudha@123";
 
-// Replace with your computer's IP address
-const char* SERVER_URL = "http://192.168.1.34:5000/spotify";
+// IMPORTANT:
+// Replace this with YOUR COMPUTER'S LOCAL IP
+// Example:
+// http://192.168.1.34:8000/spotify
+const char* SERVER_URL = "http://192.168.1.34:8000/spotify";
 
 // ---------------------------
 
@@ -39,9 +42,16 @@ void setup()
 
     song.title = "Connecting...";
     song.artist = "Starting...";
+    song.album = "";
+
+    song.currentLyric = "";
+    song.nextLyric = "";
+    song.hasLyrics = false;
+
     song.duration = 100;
     song.progress = 0;
     song.animatedProgress = 0.0f;
+
     song.playing = false;
 
     screen.setSong(song);
@@ -57,14 +67,13 @@ void loop()
 {
     unsigned long now = millis();
 
-    // Update Spotify client
     spotify.update();
 
     if (spotify.isConnected())
     {
         SongInfo newSong = spotify.getSong();
 
-        // Detect song change
+        // Song changed
         if (newSong.title != song.title)
         {
             notifications.show(
@@ -86,19 +95,36 @@ void loop()
         song.animatedProgress +=
             (targetProgress - song.animatedProgress) * 0.15f;
 
-        // Copy latest Spotify data
+        // Copy Spotify data
+
         song.title = newSong.title;
         song.artist = newSong.artist;
+        song.album = newSong.album;
+
         song.progress = newSong.progress;
         song.duration = newSong.duration;
+
         song.playing = newSong.playing;
+
+        // Lyrics
+
+        song.currentLyric = newSong.currentLyric;
+        song.nextLyric = newSong.nextLyric;
+        song.hasLyrics = newSong.hasLyrics;
     }
     else
     {
         song.title = "Connecting...";
         song.artist = "Waiting for WiFi...";
+        song.album = "";
+
+        song.currentLyric = "";
+        song.nextLyric = "";
+        song.hasLyrics = false;
+
         song.progress = 0;
         song.duration = 100;
+
         song.playing = false;
 
         song.animatedProgress +=
@@ -108,6 +134,7 @@ void loop()
     notifications.update();
 
     screen.setSong(song);
+
     screen.update();
 
     if (now - lastFrame >= FRAME_TIME)

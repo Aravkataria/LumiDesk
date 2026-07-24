@@ -4,7 +4,6 @@
 ScreenManager::ScreenManager()
 {
     currentScreen = ScreenType::BOOT;
-
     marquee.setDisplayWidth(128);
 }
 
@@ -23,9 +22,8 @@ void ScreenManager::setSong(const SongInfo& song)
     // Only reset the marquee when the title changes
     if (song.title != currentSong.title)
     {
-        // Temporary width estimate
-        // Later we'll replace this with DisplayManager::getTextWidth()
-        marquee.setText(song.title, song.title.length() * 8);
+        int width = display.getTextWidth(song.title);
+        marquee.setText(song.title, width);
     }
 
     currentSong = song;
@@ -63,8 +61,7 @@ void ScreenManager::draw(DisplayManager& display)
 
         case ScreenType::LYRICS:
         {
-            // Placeholder for now
-            display.drawLoading("Lyrics...");
+            display.drawLyrics(currentSong);
             break;
         }
 
