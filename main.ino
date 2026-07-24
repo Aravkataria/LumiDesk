@@ -24,7 +24,7 @@ const char* WIFI_PASSWORD = "WIFI_PASS";
 // Replace this with YOUR COMPUTER'S LOCAL IP
 // Example:
 // http://192.168.1.34:8000/spotify
-const char* SERVER_URL = "http://192.168.1.34:8000/spotify";
+const char* SERVER_URL = "http://192.168.x.x:8000/spotify";
 
 // ---------------------------
 
