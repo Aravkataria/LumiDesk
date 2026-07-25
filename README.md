@@ -228,7 +228,7 @@ venv\Scripts\activate        # Windows
 pip install -r requirements.txt
 
 # 3. Run the backend
-python app.py
+uvicorn app:app --host 0.0.0.0 --port 8000 --reload
 
 # 4. Flash main.ino to the ESP32 via the Arduino IDE
 #    (set WIFI_SSID, WIFI_PASSWORD, and SERVER_URL first)
