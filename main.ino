@@ -20,8 +20,16 @@ const uint16_t FRAME_TIME = 33;
 const char* WIFI_SSID = "WIFI_ID";
 const char* WIFI_PASSWORD = "WIFI_PASS";
 
+<<<<<<< HEAD
 // Replace with your PC's LOCAL IP
 const char* SERVER_URL = "http://192.168.1.34:8000/spotify";
+=======
+// IMPORTANT:
+// Replace this with YOUR COMPUTER'S LOCAL IP
+// Example:
+// http://192.168.1.34:8000/spotify
+const char* SERVER_URL = "http://192.168.x.x:8000/spotify";
+>>>>>>> 13fa58a6fa534d5be6ff023b61fc90a00f182a8c
 
 // ---------------------------
 

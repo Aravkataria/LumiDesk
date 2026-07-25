@@ -20,3 +20,6 @@ Thumbs.db
 # Secrets
 secrets.h
 config.h
+
+obj/
+bin/
