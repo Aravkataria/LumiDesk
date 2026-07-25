@@ -165,6 +165,17 @@ void SpotifyClient::update()
 
     currentSong.hasLyrics =
         doc["has_lyrics"] | false;
+    Serial.println("====== LYRICS ======");
+    Serial.print("Has Lyrics: ");
+    Serial.println(currentSong.hasLyrics);
+
+    Serial.print("Current: ");
+    Serial.println(currentSong.currentLyric);
+
+    Serial.print("Next: ");
+    Serial.println(currentSong.nextLyric);
+
+    Serial.println("====================");
 
     Serial.println();
 

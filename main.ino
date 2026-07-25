@@ -17,16 +17,18 @@ const uint16_t FRAME_TIME = 33;
 // WiFi Configuration
 // ---------------------------
 
-const char* WIFI_SSID = "WIFI_NAME";
+const char* WIFI_SSID = "WIFI_ID";
 const char* WIFI_PASSWORD = "WIFI_PASS";
 
-// IMPORTANT:
-// Replace this with YOUR COMPUTER'S LOCAL IP
-// Example:
-// http://192.168.1.34:8000/spotify
+// Replace with your PC's LOCAL IP
 const char* SERVER_URL = "http://192.168.1.34:8000/spotify";
 
 // ---------------------------
+
+// Auto screen switching
+bool showLyrics = false;
+unsigned long lastScreenSwitch = 0;
+const unsigned long SCREEN_SWITCH_TIME = 6000;
 
 void setup()
 {
@@ -73,7 +75,6 @@ void loop()
     {
         SongInfo newSong = spotify.getSong();
 
-        // Song changed
         if (newSong.title != song.title)
         {
             notifications.show(
@@ -82,7 +83,6 @@ void loop()
             );
         }
 
-        // Smooth progress animation
         float targetProgress = 0.0f;
 
         if (newSong.duration > 0)
@@ -95,8 +95,6 @@ void loop()
         song.animatedProgress +=
             (targetProgress - song.animatedProgress) * 0.15f;
 
-        // Copy Spotify data
-
         song.title = newSong.title;
         song.artist = newSong.artist;
         song.album = newSong.album;
@@ -105,8 +103,6 @@ void loop()
         song.duration = newSong.duration;
 
         song.playing = newSong.playing;
-
-        // Lyrics
 
         song.currentLyric = newSong.currentLyric;
         song.nextLyric = newSong.nextLyric;
@@ -134,6 +130,28 @@ void loop()
     notifications.update();
 
     screen.setSong(song);
+
+    // -----------------------------
+    // Automatic Player/Lyrics switch
+    // -----------------------------
+    if (millis() - lastScreenSwitch >= SCREEN_SWITCH_TIME)
+    {
+        lastScreenSwitch = millis();
+
+        if (song.hasLyrics)
+        {
+            showLyrics = !showLyrics;
+        }
+        else
+        {
+            showLyrics = false;
+        }
+    }
+
+    if (showLyrics)
+        screen.setScreen(ScreenType::LYRICS);
+    else
+        screen.setScreen(ScreenType::PLAYER);
 
     screen.update();
 

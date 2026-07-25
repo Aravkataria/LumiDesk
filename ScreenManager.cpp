@@ -4,6 +4,7 @@
 ScreenManager::ScreenManager()
 {
     currentScreen = ScreenType::BOOT;
+
     marquee.setDisplayWidth(128);
 }
 
@@ -19,10 +20,12 @@ ScreenType ScreenManager::getScreen()
 
 void ScreenManager::setSong(const SongInfo& song)
 {
-    // Only reset the marquee when the title changes
+    // Only reset marquee when the title changes
     if (song.title != currentSong.title)
     {
-        int width = display.getTextWidth(song.title);
+        // Approximate text width (8 px per character)
+        int width = song.title.length() * 7;
+
         marquee.setText(song.title, width);
     }
 

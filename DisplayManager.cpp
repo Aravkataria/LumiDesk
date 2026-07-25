@@ -74,11 +74,24 @@ void DisplayManager::drawPlayer(const SongInfo& song, int titleX)
     // Song title
     display.setFont(u8g2_font_7x14B_tf);
 
-    display.drawStr(
-        titleX,
-        30,
-        song.title.c_str()
-    );
+    int titleWidth = display.getStrWidth(song.title.c_str());
+
+    if (titleWidth <= 128)
+    {
+        display.drawStr(
+            (128 - titleWidth) / 2,
+            30,
+            song.title.c_str()
+        );
+    }
+    else
+    {
+        display.drawStr(
+            titleX,
+            30,
+            song.title.c_str()
+        );
+    }
 
     // Artist
     display.setFont(u8g2_font_6x12_tf);
@@ -88,8 +101,10 @@ void DisplayManager::drawPlayer(const SongInfo& song, int titleX)
     if (artist.length() > 21)
         artist = artist.substring(0, 18) + "...";
 
+    int artistWidth = display.getStrWidth(artist.c_str());
+
     display.drawStr(
-        0,
+        (128 - artistWidth) / 2,
         46,
         artist.c_str()
     );
