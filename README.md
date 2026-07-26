@@ -1,8 +1,13 @@
-# esp-Spotify-Player
+# LumiDesk
 
 ## Now Playing OLED Display
 
 A small ESP32 + OLED display that mirrors whatever's currently playing on your PC — title, artist, album, a live animated progress bar, and time-synced lyrics — updated in near real time over your local network.
+<p align="center">
+  <img src="https://hitscounter.dev/api/hit?url=https%3A%2F%2Fgithub.com%2FAravkataria%2FLumiDesk&label=Repo+Visitors&color=00bfff&style=for-the-badge&v=1" />
+  <img src="https://img.shields.io/github/stars/Aravkataria/LumiDesk?style=for-the-badge&color=00bfff" />
+  <img src="https://img.shields.io/github/forks/Aravkataria/LumiDesk?style=for-the-badge&color=00bfff" />
+</p>
 
 ## Table of Contents
 
