@@ -11,32 +11,14 @@ SpotifyClient spotify;
 SongInfo song;
 
 unsigned long lastFrame = 0;
-const uint16_t FRAME_TIME = 33;
+const uint16_t FRAME_TIME = 16;      // ~60 FPS
 
-// ---------------------------
-// WiFi Configuration
-// ---------------------------
-
-const char* WIFI_SSID = "WIFI_ID";
+// WiFi
+const char* WIFI_SSID = "WIFI_NAME";
 const char* WIFI_PASSWORD = "WIFI_PASS";
 
-<<<<<<< HEAD
-// Replace with your PC's LOCAL IP
+// CHANGE THIS
 const char* SERVER_URL = "http://192.168.1.34:8000/spotify";
-=======
-// IMPORTANT:
-// Replace this with YOUR COMPUTER'S LOCAL IP
-// Example:
-// http://192.168.1.34:8000/spotify
-const char* SERVER_URL = "http://192.168.x.x:8000/spotify";
->>>>>>> 13fa58a6fa534d5be6ff023b61fc90a00f182a8c
-
-// ---------------------------
-
-// Auto screen switching
-bool showLyrics = false;
-unsigned long lastScreenSwitch = 0;
-const unsigned long SCREEN_SWITCH_TIME = 6000;
 
 void setup()
 {
@@ -51,20 +33,23 @@ void setup()
     );
 
     song.title = "Connecting...";
-    song.artist = "Starting...";
+    song.artist = "";
     song.album = "";
 
     song.currentLyric = "";
     song.nextLyric = "";
-    song.hasLyrics = false;
 
     song.duration = 100;
     song.progress = 0;
-    song.animatedProgress = 0.0f;
 
     song.playing = false;
+    song.hasLyrics = false;
+
+    song.animatedProgress = 0;
 
     screen.setSong(song);
+
+    // ALWAYS PLAYER
     screen.setScreen(ScreenType::PLAYER);
 
     notifications.show(
@@ -75,8 +60,6 @@ void setup()
 
 void loop()
 {
-    unsigned long now = millis();
-
     spotify.update();
 
     if (spotify.isConnected())
@@ -91,17 +74,18 @@ void loop()
             );
         }
 
-        float targetProgress = 0.0f;
+        float target = 0;
 
         if (newSong.duration > 0)
         {
-            targetProgress =
+            target =
                 (float)newSong.progress /
                 (float)newSong.duration;
         }
 
+        // smoother animation
         song.animatedProgress +=
-            (targetProgress - song.animatedProgress) * 0.15f;
+            (target - song.animatedProgress) * 0.08f;
 
         song.title = newSong.title;
         song.artist = newSong.artist;
@@ -119,53 +103,33 @@ void loop()
     else
     {
         song.title = "Connecting...";
-        song.artist = "Waiting for WiFi...";
+        song.artist = "Waiting for backend...";
         song.album = "";
 
         song.currentLyric = "";
         song.nextLyric = "";
-        song.hasLyrics = false;
 
         song.progress = 0;
         song.duration = 100;
 
         song.playing = false;
+        song.hasLyrics = false;
 
-        song.animatedProgress +=
-            (0.0f - song.animatedProgress) * 0.15f;
+        song.animatedProgress *= 0.9f;
     }
 
     notifications.update();
 
     screen.setSong(song);
 
-    // -----------------------------
-    // Automatic Player/Lyrics switch
-    // -----------------------------
-    if (millis() - lastScreenSwitch >= SCREEN_SWITCH_TIME)
-    {
-        lastScreenSwitch = millis();
-
-        if (song.hasLyrics)
-        {
-            showLyrics = !showLyrics;
-        }
-        else
-        {
-            showLyrics = false;
-        }
-    }
-
-    if (showLyrics)
-        screen.setScreen(ScreenType::LYRICS);
-    else
-        screen.setScreen(ScreenType::PLAYER);
-
     screen.update();
 
-    if (now - lastFrame >= FRAME_TIME)
+    // NEVER SWITCH SCREENS
+    screen.setScreen(ScreenType::PLAYER);
+
+    if (millis() - lastFrame >= FRAME_TIME)
     {
-        lastFrame = now;
+        lastFrame = millis();
 
         display.beginFrame();
 

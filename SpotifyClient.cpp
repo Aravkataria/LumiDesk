@@ -1,9 +1,5 @@
 #include "SpotifyClient.h"
 
-#include <WiFi.h>
-#include <WiFiClient.h>
-#include <ArduinoJson.h>
-
 SpotifyClient::SpotifyClient()
 {
     connected = false;
@@ -23,12 +19,18 @@ void SpotifyClient::begin(
     WiFi.begin(ssid, password);
 
     Serial.println();
-    Serial.println("========== Spotify OLED ==========");
+    Serial.println("====================================");
+    Serial.println(" Spotify OLED");
+    Serial.println("====================================");
     Serial.println("Connecting to WiFi...");
 }
 
 void SpotifyClient::update()
 {
+    //--------------------------------------------------
+    // WiFi
+    //--------------------------------------------------
+
     if (WiFi.status() != WL_CONNECTED)
     {
         connected = false;
@@ -40,168 +42,129 @@ void SpotifyClient::update()
         connected = true;
 
         Serial.println();
-        Serial.println("WiFi Connected!");
+        Serial.println("WiFi Connected");
 
-        Serial.print("IP: ");
+        Serial.print("IP : ");
         Serial.println(WiFi.localIP());
 
-        Serial.print("RSSI: ");
+        Serial.print("RSSI : ");
         Serial.println(WiFi.RSSI());
 
         Serial.println();
     }
 
-    // Poll backend every 500 ms
+    //--------------------------------------------------
+    // Poll every 500ms
+    //--------------------------------------------------
+
     if (millis() - lastRequest < 500)
         return;
 
     lastRequest = millis();
 
-    WiFiClient client;
+    //--------------------------------------------------
+    // HTTP Request
+    //--------------------------------------------------
 
-    //-------------------------------------------------
-    // Parse URL
-    //-------------------------------------------------
+    http.begin(serverURL);
 
-    String url = String(serverURL);
+    http.setTimeout(3000);
 
-    url.replace("http://", "");
+    int httpCode = http.GET();
 
-    int slash = url.indexOf('/');
-
-    String hostPort = url.substring(0, slash);
-    String path = url.substring(slash);
-
-    String host = hostPort;
-    int port = 80;
-
-    int colon = hostPort.indexOf(':');
-
-    if (colon >= 0)
+    if (httpCode != HTTP_CODE_OK)
     {
-        host = hostPort.substring(0, colon);
-        port = hostPort.substring(colon + 1).toInt();
-    }
+        Serial.print("HTTP Error : ");
+        Serial.println(httpCode);
 
-    //-------------------------------------------------
-
-    Serial.println("--------------------------------");
-    Serial.print("Connecting to ");
-    Serial.print(host);
-    Serial.print(":");
-    Serial.println(port);
-
-    if (!client.connect(host.c_str(), port))
-    {
-        Serial.println("Server connection failed.");
+        http.end();
         return;
     }
 
-    client.print(
-        String("GET ") + path + " HTTP/1.1\r\n" +
-        "Host: " + host + "\r\n" +
-        "Connection: close\r\n\r\n"
-    );
+    String payload = http.getString();
 
-    unsigned long timeout = millis();
+    http.end();
 
-    String response;
-
-    while (client.connected() &&
-           millis() - timeout < 5000)
-    {
-        while (client.available())
-        {
-            response += (char)client.read();
-            timeout = millis();
-        }
-    }
-
-    client.stop();
-
-    int jsonStart = response.indexOf('{');
-
-    if (jsonStart < 0)
-    {
-        Serial.println("No JSON received.");
-        return;
-    }
-
-    String json = response.substring(jsonStart);
+    //--------------------------------------------------
+    // JSON
+    //--------------------------------------------------
 
     JsonDocument doc;
 
-    auto error = deserializeJson(doc, json);
+    DeserializationError err =
+        deserializeJson(doc, payload);
 
-    if (error)
+    if (err)
     {
-        Serial.print("JSON Error: ");
-        Serial.println(error.c_str());
+        Serial.print("JSON Error : ");
+        Serial.println(err.c_str());
         return;
     }
 
-    //-------------------------------------------------
-    // Spotify Info
-    //-------------------------------------------------
+    //--------------------------------------------------
+    // API Version
+    //--------------------------------------------------
 
-    currentSong.title = doc["title"] | "";
-    currentSong.artist = doc["artist"] | "";
-    currentSong.album = doc["album"] | "";
+    int apiVersion = doc["api_version"] | 1;
 
-    currentSong.progress = doc["progress"] | 0;
-    currentSong.duration = doc["duration"] | 1;
+    if (apiVersion != 2)
+    {
+        Serial.println("Backend version mismatch.");
+    }
 
-    currentSong.playing = doc["playing"] | false;
+    //--------------------------------------------------
+    // Song
+    //--------------------------------------------------
 
-    //-------------------------------------------------
+    currentSong.title =
+        String((const char*)doc["title"]);
+
+    currentSong.artist =
+        String((const char*)doc["artist"]);
+
+    currentSong.album =
+        String((const char*)doc["album"]);
+
+    currentSong.progress =
+        doc["progress"] | 0;
+
+    currentSong.duration =
+        doc["duration"] | 1;
+
+    currentSong.playing =
+        doc["playing"] | false;
+
+    //--------------------------------------------------
     // Lyrics
-    //-------------------------------------------------
+    //--------------------------------------------------
 
     currentSong.currentLyric =
-        doc["current_lyric"] | "";
+        String((const char*)doc["current_lyric"]);
 
     currentSong.nextLyric =
-        doc["next_lyric"] | "";
+        String((const char*)doc["next_lyric"]);
 
     currentSong.hasLyrics =
         doc["has_lyrics"] | false;
-    Serial.println("====== LYRICS ======");
-    Serial.print("Has Lyrics: ");
-    Serial.println(currentSong.hasLyrics);
 
-    Serial.print("Current: ");
-    Serial.println(currentSong.currentLyric);
+    //--------------------------------------------------
+    // Debug
+    //--------------------------------------------------
 
-    Serial.print("Next: ");
-    Serial.println(currentSong.nextLyric);
+    Serial.println("----------------------------");
 
-    Serial.println("====================");
-
-    Serial.println();
-
-    Serial.println("========== Spotify ==========");
-
-    Serial.print("Title : ");
     Serial.println(currentSong.title);
 
-    Serial.print("Artist: ");
     Serial.println(currentSong.artist);
 
-    Serial.print("Album : ");
-    Serial.println(currentSong.album);
-
-    if (currentSong.hasLyrics)
+    if(currentSong.hasLyrics)
     {
-        Serial.println();
+        Serial.print("♪ ");
 
-        Serial.print("Current: ");
         Serial.println(currentSong.currentLyric);
-
-        Serial.print("Next   : ");
-        Serial.println(currentSong.nextLyric);
     }
 
-    Serial.println("=============================");
+    Serial.println("----------------------------");
 }
 
 bool SpotifyClient::isConnected()

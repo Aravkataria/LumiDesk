@@ -24,10 +24,8 @@ void MarqueeManager::setDisplayWidth(int width)
 void MarqueeManager::setText(const String& value, int width)
 {
     text = value;
-
     textWidth = width;
 
-    // If the text fits on screen, centre it.
     if (textWidth <= displayWidth)
     {
         currentX = (displayWidth - textWidth) / 2;
@@ -35,8 +33,10 @@ void MarqueeManager::setText(const String& value, int width)
     }
     else
     {
-        currentX = 0;
         scrolling = true;
+
+        // Start just inside the left edge
+        currentX = 0;
     }
 
     lastMove = millis();
@@ -55,45 +55,44 @@ void MarqueeManager::update()
     switch (state)
     {
         case PAUSE_AT_START:
-
-            if (now - pauseStart >= 1000)
+        {
+            if (now - pauseStart >= 1200)
             {
                 state = SCROLLING;
                 lastMove = now;
             }
-
             break;
+        }
 
         case SCROLLING:
-
-            if (now - lastMove >= 25)
+        {
+            if (now - lastMove >= 20)
             {
                 lastMove = now;
 
                 currentX--;
 
-                // Keep scrolling until the whole title has passed
-                if (currentX <= -(textWidth - displayWidth + 12))
+                // Scroll completely off-screen
+                if (currentX <= -textWidth - 12)
                 {
                     state = PAUSE_AT_END;
                     pauseStart = now;
                 }
             }
-
             break;
+        }
 
         case PAUSE_AT_END:
-
-            if (now - pauseStart >= 1000)
+        {
+            if (now - pauseStart >= 1200)
             {
-                currentX = 0;
+                currentX = displayWidth;
 
-                state = PAUSE_AT_START;
-
-                pauseStart = now;
+                state = SCROLLING;
+                lastMove = now;
             }
-
             break;
+        }
     }
 }
 

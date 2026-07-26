@@ -20,12 +20,10 @@ ScreenType ScreenManager::getScreen()
 
 void ScreenManager::setSong(const SongInfo& song)
 {
-    // Only reset marquee when the title changes
+    // Only restart marquee if title changed
     if (song.title != currentSong.title)
     {
-        // Approximate text width (8 px per character)
         int width = song.title.length() * 7;
-
         marquee.setText(song.title, width);
     }
 
@@ -53,6 +51,7 @@ void ScreenManager::draw(DisplayManager& display)
             break;
         }
 
+        // Main Screen
         case ScreenType::PLAYER:
         {
             display.drawPlayer(
@@ -62,9 +61,13 @@ void ScreenManager::draw(DisplayManager& display)
             break;
         }
 
+        // Lyrics screen removed
         case ScreenType::LYRICS:
         {
-            display.drawLyrics(currentSong);
+            display.drawPlayer(
+                currentSong,
+                marquee.offset()
+            );
             break;
         }
 
@@ -82,7 +85,10 @@ void ScreenManager::draw(DisplayManager& display)
 
         default:
         {
-            display.drawError("Invalid Screen");
+            display.drawPlayer(
+                currentSong,
+                marquee.offset()
+            );
             break;
         }
     }

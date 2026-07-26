@@ -11,6 +11,7 @@
 class SpotifyClient
 {
 private:
+
     const char* ssid;
     const char* password;
     const char* serverURL;
@@ -21,13 +22,17 @@ private:
 
     unsigned long lastRequest;
 
+    HTTPClient http;
+
 public:
+
     SpotifyClient();
 
     void begin(
         const char* wifiSSID,
         const char* wifiPassword,
-        const char* url);
+        const char* url
+    );
 
     void update();
 

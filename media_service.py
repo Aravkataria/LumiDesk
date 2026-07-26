@@ -1,5 +1,8 @@
 import asyncio
+import re
+import unicodedata
 
+from unidecode import unidecode
 from winsdk.windows.media.control import (
     GlobalSystemMediaTransportControlsSessionManager as MediaManager
 )
@@ -14,6 +17,8 @@ class MediaService:
         self.last_song = ""
 
         self.song = {
+            "api_version": 2,
+
             "title": "",
             "artist": "",
             "album": "",
@@ -28,16 +33,52 @@ class MediaService:
             "has_lyrics": False
         }
 
+    # ------------------------------------------------
+
+    def clean_text(self, text, fallback=""):
+
+        if text is None:
+            return fallback
+
+        text = str(text).strip()
+
+        if not text:
+            return fallback
+
+        text = unicodedata.normalize("NFKC", text)
+
+        text = unidecode(text)
+
+        text = re.sub(r"[^\x20-\x7E]", "", text)
+
+        text = re.sub(r"\s+", " ", text)
+
+        text = text.strip()
+
+        return text if text else fallback
+
+    # ------------------------------------------------
+
     async def update(self):
 
         try:
 
-            sessions = await MediaManager.request_async()
+            manager = await MediaManager.request_async()
 
-            session = sessions.get_current_session()
+            session = manager.get_current_session()
 
             if session is None:
+
                 self.song["playing"] = False
+                self.song["title"] = "Nothing Playing"
+                self.song["artist"] = ""
+                self.song["album"] = ""
+                self.song["progress"] = 0
+                self.song["duration"] = 0
+                self.song["current_lyric"] = ""
+                self.song["next_lyric"] = ""
+                self.song["has_lyrics"] = False
+
                 return
 
             info = await session.try_get_media_properties_async()
@@ -46,29 +87,57 @@ class MediaService:
 
             timeline = session.get_timeline_properties()
 
-            title = info.title
-            artist = info.artist
-            album = info.album_title
+            title = self.clean_text(
+                info.title,
+                "Unknown Title"
+            )
 
-            progress = int(timeline.position.seconds * 1000)
-            duration = int(timeline.end_time.seconds * 1000)
+            artist = self.clean_text(
+                info.artist,
+                "Unknown Artist"
+            )
 
-            playing = playback.playback_status.name == "PLAYING"
+            album = self.clean_text(
+                info.album_title,
+                ""
+            )
+
+            progress = int(
+                timeline.position.seconds * 1000
+            )
+
+            duration = max(
+                1,
+                int(timeline.end_time.seconds * 1000)
+            )
+
+            playing = (
+                playback.playback_status.name == "PLAYING"
+            )
 
             current_key = f"{artist}::{title}"
 
-            # New song?
             if current_key != self.last_song:
 
                 self.last_song = current_key
 
-                print(f"Fetching lyrics: {artist} - {title}")
+                print(
+                    f"Loading lyrics: {artist} - {title}"
+                )
 
-                lyrics.fetch(title, artist)
+                lyrics.fetch(
+                    title,
+                    artist
+                )
 
             current, nxt, has = lyrics.current(progress)
 
-            self.song = {
+            current = self.clean_text(current)
+            nxt = self.clean_text(nxt)
+
+            self.song.update({
+
+                "api_version": 2,
 
                 "title": title,
                 "artist": artist,
@@ -82,11 +151,14 @@ class MediaService:
                 "current_lyric": current,
                 "next_lyric": nxt,
                 "has_lyrics": has
-            }
+
+            })
 
         except Exception as e:
 
-            print(e)
+            print("[MediaService]", e)
+
+    # ------------------------------------------------
 
     async def loop(self):
 

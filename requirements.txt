@@ -3,3 +3,4 @@ uvicorn
 spotipy
 python-dotenv
 requests
+Unidecode

@@ -20,18 +20,14 @@ public:
 
     int getTextWidth(const String& text);
 
+    // Screens
     void drawBoot();
-
     void drawLoading(const String& text);
 
+    // ONLY MAIN PLAYER SCREEN
     void drawPlayer(
         const SongInfo& song,
         int titleX
-    );
-
-    // NEW
-    void drawLyrics(
-        const SongInfo& song
     );
 
     void drawIdle();
@@ -40,12 +36,14 @@ public:
         const String& message
     );
 
+    // Notifications
     void drawNotification(
         const String& title,
         const String& message,
         int yOffset
     );
 
+    // Progress
     void drawProgressBar(
         int x,
         int y,
@@ -57,6 +55,26 @@ public:
 private:
 
     U8G2_SSD1306_128X64_NONAME_F_HW_I2C display;
+
+    //---------------------------------------------------
+    // Helpers
+    //---------------------------------------------------
+
+    String fitText(
+        const String& text,
+        int maxWidth,
+        const uint8_t* font
+    );
+
+    void drawCenteredText(
+        int y,
+        const String& text,
+        const uint8_t* font
+    );
+
+    void drawTimeBar(
+        const SongInfo& song
+    );
 };
 
 #endif

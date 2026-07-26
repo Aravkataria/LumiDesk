@@ -33,54 +33,183 @@ int DisplayManager::getTextWidth(const String& text)
     return display.getStrWidth(text.c_str());
 }
 
+//----------------------------------------------------
+// Helper Functions
+//----------------------------------------------------
+
+String DisplayManager::fitText(
+    const String& text,
+    int maxWidth,
+    const uint8_t* font)
+{
+    display.setFont(font);
+
+    if (display.getStrWidth(text.c_str()) <= maxWidth)
+        return text;
+
+    String value = text;
+
+    while (value.length() > 0)
+    {
+        value.remove(value.length() - 1);
+
+        String temp = value + "...";
+
+        if (display.getStrWidth(temp.c_str()) <= maxWidth)
+            return temp;
+    }
+
+    return "...";
+}
+
+void DisplayManager::drawCenteredText(
+    int y,
+    const String& text,
+    const uint8_t* font)
+{
+    display.setFont(font);
+
+    int width = display.getStrWidth(text.c_str());
+
+    display.drawStr(
+        (128 - width) / 2,
+        y,
+        text.c_str()
+    );
+}
+
+void DisplayManager::drawTimeBar(
+    const SongInfo& song)
+{
+    char current[8];
+    char total[8];
+
+    sprintf(
+        current,
+        "%u:%02u",
+        song.progress / 60000,
+        (song.progress / 1000) % 60
+    );
+
+    sprintf(
+        total,
+        "%u:%02u",
+        song.duration / 60000,
+        (song.duration / 1000) % 60
+    );
+
+    display.setFont(u8g2_font_5x7_tf);
+
+    display.drawStr(0, 63, current);
+
+    display.drawStr(103, 63, total);
+
+    drawProgressBar(
+        28,
+        59,
+        70,
+        4,
+        song.animatedProgress
+    );
+}
+
+//----------------------------------------------------
+// Boot Screen
+//----------------------------------------------------
+
 void DisplayManager::drawBoot()
 {
     display.setFont(u8g2_font_logisoso18_tf);
 
-    int w = display.getStrWidth("Spotify");
-    display.drawStr((128 - w) / 2, 28, "Spotify");
+    int width = display.getStrWidth("Spotify");
+
+    display.drawStr(
+        (128 - width) / 2,
+        28,
+        "Spotify"
+    );
 
     display.setFont(u8g2_font_6x12_tf);
 
-    w = display.getStrWidth("OLED Pro");
-    display.drawStr((128 - w) / 2, 48, "OLED Pro");
+    width = display.getStrWidth("OLED Pro");
+
+    display.drawStr(
+        (128 - width) / 2,
+        48,
+        "OLED Pro"
+    );
 }
 
-void DisplayManager::drawLoading(const String& text)
+//----------------------------------------------------
+// Loading Screen
+//----------------------------------------------------
+
+void DisplayManager::drawLoading(
+    const String& text)
 {
-    display.setFont(u8g2_font_6x12_tf);
+    drawCenteredText(
+        20,
+        "Connecting...",
+        u8g2_font_7x14B_tf
+    );
 
-    display.drawStr(8, 18, "Loading...");
+    display.drawFrame(
+        14,
+        34,
+        100,
+        10
+    );
 
-    display.drawFrame(8, 28, 112, 10);
-    display.drawBox(10, 30, 40, 6);
+    display.drawBox(
+        16,
+        36,
+        40,
+        6
+    );
 
-    display.drawStr(8, 54, text.c_str());
+    drawCenteredText(
+        58,
+        text,
+        u8g2_font_5x7_tf
+    );
 }
+//----------------------------------------------------
+// Main Player Screen
+//----------------------------------------------------
 
-void DisplayManager::drawPlayer(const SongInfo& song, int titleX)
+void DisplayManager::drawPlayer(
+    const SongInfo& song,
+    int titleX)
 {
+    //--------------------------------------------------
+    // Header
+    //--------------------------------------------------
+
     display.setFont(u8g2_font_6x12_tf);
 
     display.drawStr(0, 10, "Spotify");
 
     if (song.playing)
-        display.drawStr(118, 10, ">");
+        display.drawStr(120, 10, ">");
     else
         display.drawStr(116, 10, "||");
 
     display.drawHLine(0, 14, 128);
 
-    // Song title
+    //--------------------------------------------------
+    // Song Title
+    //--------------------------------------------------
+
     display.setFont(u8g2_font_7x14B_tf);
 
-    int titleWidth = display.getStrWidth(song.title.c_str());
+    int titleWidth =
+        display.getStrWidth(song.title.c_str());
 
-    if (titleWidth <= 128)
+    if (titleWidth <= 124)
     {
         display.drawStr(
             (128 - titleWidth) / 2,
-            30,
+            28,
             song.title.c_str()
         );
     }
@@ -88,155 +217,161 @@ void DisplayManager::drawPlayer(const SongInfo& song, int titleX)
     {
         display.drawStr(
             titleX,
-            30,
+            28,
             song.title.c_str()
         );
     }
 
+    //--------------------------------------------------
     // Artist
-    display.setFont(u8g2_font_6x12_tf);
+    //--------------------------------------------------
 
-    String artist = song.artist;
-
-    if (artist.length() > 21)
-        artist = artist.substring(0, 18) + "...";
-
-    int artistWidth = display.getStrWidth(artist.c_str());
-
-    display.drawStr(
-        (128 - artistWidth) / 2,
-        46,
-        artist.c_str()
-    );
-
-    drawProgressBar(
-        0,
-        56,
-        128,
-        6,
-        song.animatedProgress
-    );
-}
-
-void DisplayManager::drawLyrics(const SongInfo& song)
-{
-    display.setFont(u8g2_font_6x12_tf);
-
-    display.drawStr(0, 10, "Lyrics");
-
-    if (song.playing)
-        display.drawStr(118, 10, ">");
-    else
-        display.drawStr(116, 10, "||");
-
-    display.drawHLine(0, 14, 128);
-
-    if (!song.hasLyrics)
-    {
-        display.drawStr(8, 34, "No synced lyrics");
-
-        drawProgressBar(
-            0,
-            56,
-            128,
-            6,
-            song.animatedProgress
+    String artist =
+        fitText(
+            song.artist,
+            124,
+            u8g2_font_5x7_tf
         );
 
-        return;
-    }
-
-    display.setFont(u8g2_font_7x14B_tf);
-
-    String current = song.currentLyric;
-
-    if (current.length() > 22)
-        current = current.substring(0, 19) + "...";
-
-    int w = display.getStrWidth(current.c_str());
-
-    display.drawStr(
-        (128 - w) / 2,
-        32,
-        current.c_str()
+    drawCenteredText(
+        38,
+        artist,
+        u8g2_font_5x7_tf
     );
+
+    //--------------------------------------------------
+    // Current Lyric
+    //--------------------------------------------------
+
+    display.drawHLine(0, 42, 128);
 
     display.setFont(u8g2_font_6x12_tf);
 
-    String next = song.nextLyric;
+    String lyric;
 
-    if (next.length() > 24)
-        next = next.substring(0, 21) + "...";
-
-    w = display.getStrWidth(next.c_str());
+    if(song.hasLyrics)
+    {
+        lyric =
+            fitText(
+                song.currentLyric,
+                112,
+                u8g2_font_6x12_tf
+            );
+    }
+    else
+    {
+        lyric = "No synced lyrics";
+    }
 
     display.drawStr(
-        (128 - w) / 2,
-        48,
-        next.c_str()
+        2,
+        54,
+        "\x99"
     );
 
-    drawProgressBar(
-        0,
-        56,
-        128,
-        6,
-        song.animatedProgress
+    display.drawStr(
+        12,
+        54,
+        lyric.c_str()
     );
+
+    //--------------------------------------------------
+    // Bottom Time Bar
+    //--------------------------------------------------
+
+    drawTimeBar(song);
 }
+//----------------------------------------------------
+// Idle Screen
+//----------------------------------------------------
 
 void DisplayManager::drawIdle()
 {
-    display.setFont(u8g2_font_logisoso20_tf);
+    drawCenteredText(
+        26,
+        "Spotify",
+        u8g2_font_logisoso18_tf
+    );
 
-    display.drawStr(18, 34, "22:41");
-
-    display.setFont(u8g2_font_6x12_tf);
-
-    display.drawStr(26, 60, "Waiting Spotify...");
+    drawCenteredText(
+        52,
+        "Waiting for playback...",
+        u8g2_font_5x7_tf
+    );
 }
 
-void DisplayManager::drawError(const String& message)
+//----------------------------------------------------
+// Error Screen
+//----------------------------------------------------
+
+void DisplayManager::drawError(
+    const String& message)
 {
-    display.setFont(u8g2_font_7x14B_tf);
+    drawCenteredText(
+        20,
+        "ERROR",
+        u8g2_font_7x14B_tf
+    );
 
-    display.drawStr(0, 18, "ERROR");
-
-    display.setFont(u8g2_font_6x12_tf);
-
-    display.drawStr(0, 40, message.c_str());
+    drawCenteredText(
+        42,
+        fitText(
+            message,
+            120,
+            u8g2_font_6x12_tf
+        ),
+        u8g2_font_6x12_tf
+    );
 }
+
+//----------------------------------------------------
+// Notification
+//----------------------------------------------------
 
 void DisplayManager::drawNotification(
     const String& title,
     const String& message,
     int yOffset)
 {
-    display.drawBox(
-        0,
+    display.drawRBox(
+        2,
         yOffset,
-        128,
-        24
+        124,
+        22,
+        3
     );
 
     display.setDrawColor(0);
 
-    display.setFont(u8g2_font_6x12_tf);
+    display.setFont(u8g2_font_5x7_tf);
 
     display.drawStr(
-        6,
-        yOffset + 9,
+        8,
+        yOffset + 8,
         title.c_str()
     );
 
+    String text =
+        fitText(
+            message,
+            108,
+            u8g2_font_6x12_tf
+        );
+
+    display.setFont(u8g2_font_6x12_tf);
+
     display.drawStr(
-        6,
-        yOffset + 20,
-        message.c_str()
+        8,
+        yOffset + 19,
+        text.c_str()
     );
 
     display.setDrawColor(1);
 }
+
+//----------------------------------------------------
+// Progress Bar
+//----------------------------------------------------
 
 void DisplayManager::drawProgressBar(
     int x,
@@ -245,11 +380,11 @@ void DisplayManager::drawProgressBar(
     int h,
     float progress)
 {
-    if (progress < 0)
-        progress = 0;
+    if(progress < 0.0f)
+        progress = 0.0f;
 
-    if (progress > 1)
-        progress = 1;
+    if(progress > 1.0f)
+        progress = 1.0f;
 
     display.drawFrame(
         x,
@@ -258,12 +393,16 @@ void DisplayManager::drawProgressBar(
         h
     );
 
-    int fill = (w - 2) * progress;
+    int fill =
+        (w - 2) * progress;
 
-    display.drawBox(
-        x + 1,
-        y + 1,
-        fill,
-        h - 2
-    );
+    if(fill > 0)
+    {
+        display.drawBox(
+            x + 1,
+            y + 1,
+            fill,
+            h - 2
+        );
+    }
 }
