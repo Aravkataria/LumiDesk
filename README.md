@@ -171,7 +171,7 @@ This starts the FastAPI server on port 8000. Find your PC's local IP address (`i
    ```
 3. Point `SERVER_URL` at your PC's local IP:
    ```cpp
-   const char* SERVER_URL = "http://192.168.1.34:8000/spotify";
+   const char* SERVER_URL = "http://192.168.x.x:8000/spotify";
    ```
 4. Flash to the ESP32.
 
