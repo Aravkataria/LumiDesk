@@ -14,11 +14,11 @@ unsigned long lastFrame = 0;
 const uint16_t FRAME_TIME = 16;      // ~60 FPS
 
 // WiFi
-const char* WIFI_SSID = "WIFI_NAME";
+const char* WIFI_SSID = "WIFI_ID";
 const char* WIFI_PASSWORD = "WIFI_PASS";
 
 // CHANGE THIS
-const char* SERVER_URL = "http://192.168.1.34:8000/spotify";
+const char* SERVER_URL = "http://192.168.x.x:8000/spotify";
 
 void setup()
 {

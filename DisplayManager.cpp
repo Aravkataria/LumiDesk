@@ -71,7 +71,7 @@ void DisplayManager::drawCenteredText(
 
     int width = display.getStrWidth(text.c_str());
 
-    display.drawStr(
+    drawStr(
         (128 - width) / 2,
         y,
         text.c_str()
@@ -100,9 +100,9 @@ void DisplayManager::drawTimeBar(
 
     display.setFont(u8g2_font_5x7_tf);
 
-    display.drawStr(0, 63, current);
+    drawStr(0, 63, current);
 
-    display.drawStr(103, 63, total);
+    drawStr(103, 63, total);
 
     drawProgressBar(
         28,
@@ -123,7 +123,7 @@ void DisplayManager::drawBoot()
 
     int width = display.getStrWidth("Spotify");
 
-    display.drawStr(
+    drawStr(
         (128 - width) / 2,
         28,
         "Spotify"
@@ -133,7 +133,7 @@ void DisplayManager::drawBoot()
 
     width = display.getStrWidth("OLED Pro");
 
-    display.drawStr(
+    drawStr(
         (128 - width) / 2,
         48,
         "OLED Pro"
@@ -153,14 +153,14 @@ void DisplayManager::drawLoading(
         u8g2_font_7x14B_tf
     );
 
-    display.drawFrame(
+    drawFrame(
         14,
         34,
         100,
         10
     );
 
-    display.drawBox(
+    drawBox(
         16,
         36,
         40,
@@ -187,14 +187,14 @@ void DisplayManager::drawPlayer(
 
     display.setFont(u8g2_font_6x12_tf);
 
-    display.drawStr(0, 10, "Spotify");
+    drawStr(0, 10, "Spotify");
 
     if (song.playing)
-        display.drawStr(120, 10, ">");
+        drawStr(120, 10, ">");
     else
-        display.drawStr(116, 10, "||");
+        drawStr(116, 10, "||");
 
-    display.drawHLine(0, 14, 128);
+    drawHLine(0, 14, 128);
 
     //--------------------------------------------------
     // Song Title
@@ -207,7 +207,7 @@ void DisplayManager::drawPlayer(
 
     if (titleWidth <= 124)
     {
-        display.drawStr(
+        drawStr(
             (128 - titleWidth) / 2,
             28,
             song.title.c_str()
@@ -215,7 +215,7 @@ void DisplayManager::drawPlayer(
     }
     else
     {
-        display.drawStr(
+        drawStr(
             titleX,
             28,
             song.title.c_str()
@@ -243,7 +243,7 @@ void DisplayManager::drawPlayer(
     // Current Lyric
     //--------------------------------------------------
 
-    display.drawHLine(0, 42, 128);
+    drawHLine(0, 42, 128);
 
     display.setFont(u8g2_font_6x12_tf);
 
@@ -263,13 +263,13 @@ void DisplayManager::drawPlayer(
         lyric = "No synced lyrics";
     }
 
-    display.drawStr(
+    drawStr(
         2,
         54,
         "\x99"
     );
 
-    display.drawStr(
+    drawStr(
         12,
         54,
         lyric.c_str()
@@ -333,7 +333,7 @@ void DisplayManager::drawNotification(
     const String& message,
     int yOffset)
 {
-    display.drawRBox(
+    drawRBox(
         2,
         yOffset,
         124,
@@ -345,7 +345,7 @@ void DisplayManager::drawNotification(
 
     display.setFont(u8g2_font_5x7_tf);
 
-    display.drawStr(
+    drawStr(
         8,
         yOffset + 8,
         title.c_str()
@@ -360,7 +360,7 @@ void DisplayManager::drawNotification(
 
     display.setFont(u8g2_font_6x12_tf);
 
-    display.drawStr(
+    drawStr(
         8,
         yOffset + 19,
         text.c_str()
@@ -386,7 +386,7 @@ void DisplayManager::drawProgressBar(
     if(progress > 1.0f)
         progress = 1.0f;
 
-    display.drawFrame(
+    drawFrame(
         x,
         y,
         w,
@@ -398,7 +398,7 @@ void DisplayManager::drawProgressBar(
 
     if(fill > 0)
     {
-        display.drawBox(
+        drawBox(
             x + 1,
             y + 1,
             fill,

@@ -166,7 +166,7 @@ class MediaService:
 
             await self.update()
 
-            await asyncio.sleep(0.5)
+            await asyncio.sleep(0.1)
 
 
 media = MediaService()
