@@ -5,11 +5,12 @@ WeatherManager::WeatherManager()
 {
 }
 
-bool WeatherManager::begin(const char* url)
+bool WeatherManager::begin(const String& url)
 {
     weatherURL = url;
+
     ready = true;
-    lastRefresh = 0;   // forces an immediate fetch on first update()
+    lastRefresh = 0;   // Force immediate update
 
     return true;
 }
@@ -34,7 +35,7 @@ bool WeatherManager::refresh()
 
 bool WeatherManager::fetchWeather()
 {
-    if (!weatherURL || WiFi.status() != WL_CONNECTED)
+    if (weatherURL.isEmpty() || WiFi.status() != WL_CONNECTED)
         return false;
 
     HTTPClient http;
@@ -44,7 +45,7 @@ bool WeatherManager::fetchWeather()
 
     int code = http.GET();
 
-    if (code != 200)
+    if (code != HTTP_CODE_OK)
     {
         http.end();
         return false;
@@ -61,10 +62,10 @@ bool WeatherManager::fetchWeather()
         return false;
 
     weather.temperature = doc["temperature"] | 0.0f;
-    weather.feelsLike    = doc["feelsLike"]    | 0.0f;
-    weather.humidity     = doc["humidity"]     | 0;
-    weather.condition    = doc["condition"]    | "--";
-    weather.icon         = doc["icon"]         | "";
+    weather.feelsLike   = doc["feelsLike"] | 0.0f;
+    weather.humidity    = doc["humidity"] | 0;
+    weather.condition   = doc["condition"] | "--";
+    weather.icon        = doc["icon"] | "";
 
     weather.valid = true;
     weather.lastUpdate = millis();

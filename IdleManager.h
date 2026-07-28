@@ -7,7 +7,10 @@ class IdleManager
 public:
     void begin();
 
-    void update(bool isPlaying);
+    // hasSession: false when there's no active media session at all
+    // (Spotify closed / "Nothing Playing") - nothing to resume, so
+    // this switches to idle immediately instead of waiting.
+    void update(bool isPlaying, bool hasSession);
 
     bool isIdle() const;
 
@@ -18,6 +21,6 @@ private:
 
     unsigned long pauseStart = 0;
 
-    static constexpr uint32_t IDLE_TIMEOUT =
-        10UL * 60UL * 1000UL;   // 10 minutes
+    static constexpr uint32_t IDLE_TIMEOUT_PAUSED =
+        10UL * 60UL * 1000UL;   // 10 minutes - song loaded, just paused
 };

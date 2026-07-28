@@ -39,6 +39,7 @@ struct SongInfo
     uint32_t progress = 0;
 
     bool playing = false;
+    bool active = false;   // false = no Spotify session at all (closed/nothing loaded)
 
     // UI Animation
     float animatedProgress = 0.0f;

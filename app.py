@@ -5,6 +5,8 @@ import time
 import requests
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from dotenv import load_dotenv
+import os
 
 from media_service import media
 
@@ -13,10 +15,9 @@ API_VERSION = 2
 # ----------------------------
 # Weather
 # ----------------------------
-# Open-Meteo needs no API key, so there's nothing to keep in .env here.
-# Update these to your actual location.
-WEATHER_LAT = 28.6024   # New Delhi
-WEATHER_LON = 77.0883
+load_dotenv()
+WEATHER_LAT = os.getenv("LAT")
+WEATHER_LON = os.getenv("LON")
 
 WEATHER_CACHE_SECONDS = 300   # matches the 5-min refresh in WeatherManager
 

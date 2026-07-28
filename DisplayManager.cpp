@@ -450,16 +450,16 @@ void DisplayManager::drawPlayer(
     if(song.playing)
     {
         drawBox(
-            118,
-            46,
-            2,
-            8
+            116,
+            44,
+            3,
+            12
         );
 
         drawBox(
-            122,
+            123,
             44,
-            2,
+            3,
             12
         );
     }

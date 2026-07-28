@@ -5,6 +5,7 @@
 #include "IdleManager.h"
 #include "ClockManager.h"
 #include "WeatherManager.h"
+#include "secrets.h"
 
 DisplayManager display;
 NotificationManager notifications;
@@ -20,12 +21,12 @@ unsigned long lastFrame = 0;
 const uint16_t FRAME_TIME = 16;      // ~60 FPS
 
 // WiFi
-const char* WIFI_SSID = "WIFI_ID";
-const char* WIFI_PASSWORD = "WIFI_PASS";
+const char* WIFI_SSID = ENV_WIFI_SSID;
+const char* WIFI_PASSWORD = ENV_WIFI_PASSWORD;
 
 // Backend URL
-const char* SERVER_URL = "http://192.168.x.x:8000/spotify";
-const char* WEATHER_URL = "http://192.168.x.x:8000/weather";
+String spotifyUrl = String(SERVER_URL) + "/spotify";
+String weatherUrl = String(SERVER_URL) + "/weather";
 
 void setup()
 {
@@ -37,7 +38,7 @@ void setup()
 
     clockManager.begin();
 
-    weatherManager.begin(WEATHER_URL);
+    weatherManager.begin(weatherUrl);
 
     spotify.begin(
         WIFI_SSID,
@@ -113,9 +114,12 @@ void loop()
         song.currentLyric = newSong.currentLyric;
         song.nextLyric = newSong.nextLyric;
         song.hasLyrics = newSong.hasLyrics;
+        song.active = newSong.active;
 
-        // Update idle timer
-        idleManager.update(song.playing);
+        // active=false means there's no Spotify session at all
+        // (e.g. Spotify closed) - nothing to resume, so it goes
+        // straight to idle instead of waiting out the pause timer.
+        idleManager.update(song.playing, song.active);
     }
     else
     {
@@ -131,10 +135,11 @@ void loop()
 
         song.playing = false;
         song.hasLyrics = false;
+        song.active = false;
 
         song.animatedProgress *= 0.9f;
 
-        idleManager.update(false);
+        idleManager.update(false, false);
     }
 
     notifications.update();

@@ -134,6 +134,9 @@ void SpotifyClient::update()
     currentSong.playing =
         doc["playing"] | false;
 
+    currentSong.active =
+        doc["active"] | false;
+
     //--------------------------------------------------
     // Lyrics
     //--------------------------------------------------

@@ -11,7 +11,7 @@ class WeatherManager
 public:
     WeatherManager();
 
-    bool begin(const char* url);
+    bool begin(const String& url);
 
     void update();
 
@@ -24,7 +24,8 @@ public:
 private:
     WeatherInfo weather;
 
-    const char* weatherURL = nullptr;
+    // Store the URL safely as a String
+    String weatherURL;
 
     bool ready = false;
 

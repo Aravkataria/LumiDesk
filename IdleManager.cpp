@@ -6,11 +6,17 @@ void IdleManager::begin()
     pauseStart = 0;
 }
 
-void IdleManager::update(bool isPlaying)
+void IdleManager::update(bool isPlaying, bool hasSession)
 {
     if (isPlaying)
     {
         reset();
+        return;
+    }
+
+    if (!hasSession)
+    {
+        idle = true;
         return;
     }
 
@@ -20,7 +26,7 @@ void IdleManager::update(bool isPlaying)
     }
 
     if (!idle &&
-        millis() - pauseStart >= IDLE_TIMEOUT)
+        millis() - pauseStart >= IDLE_TIMEOUT_PAUSED)
     {
         idle = true;
     }
