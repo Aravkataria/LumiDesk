@@ -1,14 +1,17 @@
 #pragma once
 
 #include <Arduino.h>
-#include "managers/WeatherData.h"
+#include <WiFi.h>
+#include <HTTPClient.h>
+
+#include "UIModels.h"
 
 class WeatherManager
 {
 public:
     WeatherManager();
 
-    bool begin();
+    bool begin(const char* url);
 
     void update();
 
@@ -16,10 +19,12 @@ public:
 
     bool isReady() const;
 
-    const WeatherData& getWeather() const;
+    const WeatherInfo& getWeather() const;
 
 private:
-    WeatherData weather;
+    WeatherInfo weather;
+
+    const char* weatherURL = nullptr;
 
     bool ready = false;
 

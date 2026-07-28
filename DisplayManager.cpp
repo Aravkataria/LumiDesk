@@ -15,6 +15,8 @@ void DisplayManager::begin()
 
     display.begin();
 
+    display.setContrast(255);
+
     display.enableUTF8Print();
 
     display.clearBuffer();
@@ -29,6 +31,11 @@ void DisplayManager::beginFrame()
 void DisplayManager::endFrame()
 {
     display.sendBuffer();
+}
+
+void DisplayManager::setContrast(uint8_t value)
+{
+    display.setContrast(value);
 }
 
 int DisplayManager::getTextWidth(const String& text)

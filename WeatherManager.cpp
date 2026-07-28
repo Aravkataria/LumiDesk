@@ -1,13 +1,16 @@
 #include "WeatherManager.h"
+#include <ArduinoJson.h>
 
 WeatherManager::WeatherManager()
 {
 }
 
-bool WeatherManager::begin()
+bool WeatherManager::begin(const char* url)
 {
+    weatherURL = url;
     ready = true;
-    lastRefresh = 0;
+    lastRefresh = 0;   // forces an immediate fetch on first update()
+
     return true;
 }
 
@@ -31,22 +34,42 @@ bool WeatherManager::refresh()
 
 bool WeatherManager::fetchWeather()
 {
-    /*
-        TODO
+    if (!weatherURL || WiFi.status() != WL_CONNECTED)
+        return false;
 
-        Open-Meteo implementation
+    HTTPClient http;
 
-        WeatherAPI implementation
+    http.begin(weatherURL);
+    http.setTimeout(5000);
 
-        API key from .env
+    int code = http.GET();
 
-        HTTPS request
+    if (code != 200)
+    {
+        http.end();
+        return false;
+    }
 
-        Parse JSON
+    String payload = http.getString();
+    http.end();
 
-    */
+    JsonDocument doc;
 
-    return false;
+    DeserializationError err = deserializeJson(doc, payload);
+
+    if (err)
+        return false;
+
+    weather.temperature = doc["temperature"] | 0.0f;
+    weather.feelsLike    = doc["feelsLike"]    | 0.0f;
+    weather.humidity     = doc["humidity"]     | 0;
+    weather.condition    = doc["condition"]    | "--";
+    weather.icon         = doc["icon"]         | "";
+
+    weather.valid = true;
+    weather.lastUpdate = millis();
+
+    return true;
 }
 
 bool WeatherManager::isReady() const
@@ -54,7 +77,7 @@ bool WeatherManager::isReady() const
     return ready;
 }
 
-const WeatherData& WeatherManager::getWeather() const
+const WeatherInfo& WeatherManager::getWeather() const
 {
     return weather;
 }

@@ -23,6 +23,10 @@ public:
 
     void endFrame();
 
+    void setContrast(
+        uint8_t value
+    );
+
     int getTextWidth(const String& text);
 
     //--------------------------------------------------

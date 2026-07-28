@@ -3,12 +3,16 @@
 #include "ScreenManager.h"
 #include "SpotifyClient.h"
 #include "IdleManager.h"
+#include "ClockManager.h"
+#include "WeatherManager.h"
 
 DisplayManager display;
 NotificationManager notifications;
 ScreenManager screen;
 SpotifyClient spotify;
 IdleManager idleManager;
+ClockManager clockManager;
+WeatherManager weatherManager;
 
 SongInfo song;
 
@@ -16,11 +20,12 @@ unsigned long lastFrame = 0;
 const uint16_t FRAME_TIME = 16;      // ~60 FPS
 
 // WiFi
-const char* WIFI_SSID = "KATARIA 4G";
-const char* WIFI_PASSWORD = "Sudha@123";
+const char* WIFI_SSID = "WIFI_ID";
+const char* WIFI_PASSWORD = "WIFI_PASS";
 
 // Backend URL
-const char* SERVER_URL = "http://192.168.1.33:8000/spotify";
+const char* SERVER_URL = "http://192.168.x.x:8000/spotify";
+const char* WEATHER_URL = "http://192.168.x.x:8000/weather";
 
 void setup()
 {
@@ -29,6 +34,10 @@ void setup()
     display.begin();
 
     idleManager.begin();
+
+    clockManager.begin();
+
+    weatherManager.begin(WEATHER_URL);
 
     spotify.begin(
         WIFI_SSID,
@@ -130,7 +139,15 @@ void loop()
 
     notifications.update();
 
+    clockManager.update();
+    weatherManager.update();
+
+    IdleInfo idle;
+    idle.clock = clockManager.getClock();
+    idle.weather = weatherManager.getWeather();
+
     screen.setSong(song);
+    screen.setIdleInfo(idle);
 
     // Automatically switch screens
     if (idleManager.isIdle())
