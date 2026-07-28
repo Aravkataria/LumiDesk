@@ -9,7 +9,7 @@ SpotifyClient::SpotifyClient()
 void SpotifyClient::begin(
     const char* wifiSSID,
     const char* wifiPassword,
-    const char* url)
+    const String& url)
 {
     ssid = wifiSSID;
     password = wifiPassword;
@@ -160,10 +160,9 @@ void SpotifyClient::update()
 
     Serial.println(currentSong.artist);
 
-    if(currentSong.hasLyrics)
+    if (currentSong.hasLyrics)
     {
         Serial.print("♪ ");
-
         Serial.println(currentSong.currentLyric);
     }
 

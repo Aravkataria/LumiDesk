@@ -14,7 +14,9 @@ private:
 
     const char* ssid;
     const char* password;
-    const char* serverURL;
+
+    // Store URL safely
+    String serverURL;
 
     bool connected;
 
@@ -31,7 +33,7 @@ public:
     void begin(
         const char* wifiSSID,
         const char* wifiPassword,
-        const char* url
+        const String& url
     );
 
     void update();
