@@ -60,6 +60,7 @@ void ScreenManager::draw(DisplayManager& display)
         {
             display.drawPlayer(
                 currentSong,
+                currentIdle.clock,
                 marquee.offset()
             );
             break;
@@ -70,6 +71,7 @@ void ScreenManager::draw(DisplayManager& display)
             // Reserved for future use
             display.drawPlayer(
                 currentSong,
+                currentIdle.clock,
                 marquee.offset()
             );
             break;
@@ -77,13 +79,17 @@ void ScreenManager::draw(DisplayManager& display)
 
         case ScreenType::IDLE:
         {
-            display.drawIdle(currentIdle);
+            display.drawIdle(
+                currentIdle
+            );
             break;
         }
 
         case ScreenType::ERROR_SCREEN:
         {
-            display.drawError("Unknown Error");
+            display.drawError(
+                "Unknown Error"
+            );
             break;
         }
 
@@ -91,6 +97,7 @@ void ScreenManager::draw(DisplayManager& display)
         {
             display.drawPlayer(
                 currentSong,
+                currentIdle.clock,
                 marquee.offset()
             );
             break;

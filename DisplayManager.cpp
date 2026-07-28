@@ -315,3 +315,360 @@ void DisplayManager::drawLoading(
         u8g2_font_5x7_tf
     );
 }
+//--------------------------------------------------
+// Main Player Screen
+//--------------------------------------------------
+
+void DisplayManager::drawPlayer(
+    const SongInfo& song,
+    const ClockInfo& clock,
+    int titleX)
+{
+    //--------------------------------------------------
+    // Header
+    //--------------------------------------------------
+
+    drawHeader(
+        "Spotify",
+        clock
+    );
+
+    //--------------------------------------------------
+    // Song Title
+    //--------------------------------------------------
+
+    display.setFont(
+        u8g2_font_7x14B_tf
+    );
+
+    int titleWidth =
+        display.getStrWidth(
+            song.title.c_str()
+        );
+
+    if(titleWidth <= 122)
+    {
+        drawStr(
+            (128 - titleWidth) / 2,
+            28,
+            song.title.c_str()
+        );
+    }
+    else
+    {
+        drawStr(
+            titleX,
+            28,
+            song.title.c_str()
+        );
+    }
+
+    //--------------------------------------------------
+    // Artist
+    //--------------------------------------------------
+
+    display.setFont(
+        u8g2_font_5x7_tf
+    );
+
+    String artist =
+        fitText(
+            song.artist,
+            122,
+            u8g2_font_5x7_tf
+        );
+
+    drawCenteredText(
+        38,
+        artist,
+        u8g2_font_5x7_tf
+    );
+
+    //--------------------------------------------------
+    // Divider
+    //--------------------------------------------------
+
+    drawHLine(
+        0,
+        42,
+        128
+    );
+
+    //--------------------------------------------------
+    // Lyrics
+    //--------------------------------------------------
+
+    display.setFont(
+        u8g2_font_6x12_tf
+    );
+
+    String lyric;
+
+    if(song.hasLyrics)
+    {
+        lyric =
+            fitText(
+                song.currentLyric,
+                110,
+                u8g2_font_6x12_tf
+            );
+    }
+    else
+    {
+        lyric = "No synced lyrics";
+    }
+
+    // Music icon
+
+    drawStr(
+        2,
+        54,
+        "\x99"
+    );
+
+    drawStr(
+        12,
+        54,
+        lyric.c_str()
+    );
+
+    //--------------------------------------------------
+    // Playback Indicator
+    //--------------------------------------------------
+
+    display.setFont(
+        u8g2_font_5x7_tf
+    );
+
+    if(song.playing)
+    {
+        drawBox(
+            118,
+            46,
+            2,
+            8
+        );
+
+        drawBox(
+            122,
+            44,
+            2,
+            12
+        );
+    }
+    else
+    {
+        display.drawTriangle(
+            118,
+            45,
+            118,
+            55,
+            124,
+            50
+        );
+    }
+
+    //--------------------------------------------------
+    // Bottom Time Bar
+    //--------------------------------------------------
+
+    drawTimeBar(
+        song
+    );
+}
+//--------------------------------------------------
+// Idle Weather
+//--------------------------------------------------
+
+void DisplayManager::drawIdleWeather(
+    const WeatherInfo& weather)
+{
+    display.setFont(
+        u8g2_font_6x12_tf
+    );
+
+    if(!weather.valid)
+    {
+        drawCenteredText(
+            58,
+            "Waiting for weather...",
+            u8g2_font_5x7_tf
+        );
+        return;
+    }
+
+    char temp[16];
+
+    snprintf(
+        temp,
+        sizeof(temp),
+        "%.0f C",
+        weather.temperature
+    );
+
+    drawCenteredText(
+        50,
+        temp,
+        u8g2_font_6x12_tf
+    );
+
+    drawCenteredText(
+        62,
+        fitText(
+            weather.condition,
+            120,
+            u8g2_font_5x7_tf
+        ),
+        u8g2_font_5x7_tf
+    );
+}
+
+//--------------------------------------------------
+// Idle Screen
+//--------------------------------------------------
+
+void DisplayManager::drawIdle(
+    const IdleInfo& idle)
+{
+    display.setFont(
+        u8g2_font_logisoso18_tf
+    );
+
+    int width =
+        display.getStrWidth(
+            idle.clock.time24.c_str()
+        );
+
+    drawStr(
+        (128 - width) / 2,
+        22,
+        idle.clock.time24.c_str()
+    );
+
+    drawCenteredText(
+        40,
+        idle.clock.day,
+        u8g2_font_6x12_tf
+    );
+
+    drawCenteredText(
+        52,
+        idle.clock.date,
+        u8g2_font_5x7_tf
+    );
+
+    drawIdleWeather(
+        idle.weather
+    );
+}
+
+//--------------------------------------------------
+// Error Screen
+//--------------------------------------------------
+
+void DisplayManager::drawError(
+    const String& message)
+{
+    drawCenteredText(
+        22,
+        "ERROR",
+        u8g2_font_7x14B_tf
+    );
+
+    drawCenteredText(
+        44,
+        fitText(
+            message,
+            120,
+            u8g2_font_6x12_tf
+        ),
+        u8g2_font_6x12_tf
+    );
+}
+
+//--------------------------------------------------
+// Notification
+//--------------------------------------------------
+
+void DisplayManager::drawNotification(
+    const String& title,
+    const String& message,
+    int yOffset)
+{
+    drawRBox(
+        2,
+        yOffset,
+        124,
+        22,
+        3
+    );
+
+    display.setDrawColor(0);
+
+    display.setFont(
+        u8g2_font_5x7_tf
+    );
+
+    drawStr(
+        8,
+        yOffset + 8,
+        title.c_str()
+    );
+
+    display.setFont(
+        u8g2_font_6x12_tf
+    );
+
+    String text =
+        fitText(
+            message,
+            108,
+            u8g2_font_6x12_tf
+        );
+
+    drawStr(
+        8,
+        yOffset + 19,
+        text.c_str()
+    );
+
+    display.setDrawColor(1);
+}
+
+//--------------------------------------------------
+// Progress Bar
+//--------------------------------------------------
+
+void DisplayManager::drawProgressBar(
+    int x,
+    int y,
+    int w,
+    int h,
+    float progress)
+{
+    if(progress < 0.0f)
+        progress = 0.0f;
+
+    if(progress > 1.0f)
+        progress = 1.0f;
+
+    drawFrame(
+        x,
+        y,
+        w,
+        h
+    );
+
+    int fill =
+        (w - 2) * progress;
+
+    if(fill > 0)
+    {
+        drawBox(
+            x + 1,
+            y + 1,
+            fill,
+            h - 2
+        );
+    }
+}
