@@ -20,7 +20,7 @@ ScreenType ScreenManager::getScreen()
 
 void ScreenManager::setSong(const SongInfo& song)
 {
-    // Only restart marquee if title changed
+    // Restart marquee only if title changed
     if (song.title != currentSong.title)
     {
         int width = song.title.length() * 7;
@@ -28,6 +28,11 @@ void ScreenManager::setSong(const SongInfo& song)
     }
 
     currentSong = song;
+}
+
+void ScreenManager::setIdleInfo(const IdleInfo& idle)
+{
+    currentIdle = idle;
 }
 
 void ScreenManager::update()
@@ -51,7 +56,6 @@ void ScreenManager::draw(DisplayManager& display)
             break;
         }
 
-        // Main Screen
         case ScreenType::PLAYER:
         {
             display.drawPlayer(
@@ -61,9 +65,9 @@ void ScreenManager::draw(DisplayManager& display)
             break;
         }
 
-        // Lyrics screen removed
         case ScreenType::LYRICS:
         {
+            // Reserved for future use
             display.drawPlayer(
                 currentSong,
                 marquee.offset()
@@ -73,7 +77,7 @@ void ScreenManager::draw(DisplayManager& display)
 
         case ScreenType::IDLE:
         {
-            display.drawIdle();
+            display.drawIdle(currentIdle);
             break;
         }
 

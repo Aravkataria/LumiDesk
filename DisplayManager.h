@@ -13,37 +13,56 @@ public:
 
     DisplayManager();
 
+    //--------------------------------------------------
+    // Display
+    //--------------------------------------------------
+
     void begin();
 
     void beginFrame();
+
     void endFrame();
 
     int getTextWidth(const String& text);
 
+    //--------------------------------------------------
     // Screens
-    void drawBoot();
-    void drawLoading(const String& text);
+    //--------------------------------------------------
 
-    // ONLY MAIN PLAYER SCREEN
+    void drawBoot();
+
+    void drawLoading(
+        const String& text
+    );
+
     void drawPlayer(
         const SongInfo& song,
+        const ClockInfo& clock,
         int titleX
     );
 
-    void drawIdle();
+    void drawIdle(
+        const IdleInfo& idle
+    );
 
     void drawError(
         const String& message
     );
 
-    // Notifications
+    //--------------------------------------------------
+    // Notification
+    //--------------------------------------------------
+
     void drawNotification(
         const String& title,
         const String& message,
         int yOffset
     );
 
+    //--------------------------------------------------
     // Progress
+    //--------------------------------------------------
+
     void drawProgressBar(
         int x,
         int y,
@@ -54,48 +73,72 @@ public:
 
 private:
 
+    //--------------------------------------------------
+    // OLED
+    //--------------------------------------------------
+
     U8G2_SH1106_128X64_NONAME_F_HW_I2C display;
 
-    // Panel turned out to be SH1106, not SSD1306 - the SH1106 u8g2
-    // driver (above) already handles that controller's column offset
-    // internally, so this stays at 0. Keeping the wrapper functions
-    // below so there's a single place to nudge things if any residual
-    // misalignment shows up after switching drivers.
     static constexpr int X_OFFSET = 0;
 
-    //---------------------------------------------------
-    // Offset-compensated draw wrappers
-    // (call these instead of display.drawXxx directly)
-    //---------------------------------------------------
+    //--------------------------------------------------
+    // Primitive Wrappers
+    //--------------------------------------------------
 
-    void drawStr(int x, int y, const char* text)
-    {
-        display.drawStr(x + X_OFFSET, y, text);
-    }
+    void drawStr(
+        int x,
+        int y,
+        const char* text
+    );
 
-    void drawFrame(int x, int y, int w, int h)
-    {
-        display.drawFrame(x + X_OFFSET, y, w, h);
-    }
+    void drawFrame(
+        int x,
+        int y,
+        int w,
+        int h
+    );
 
-    void drawBox(int x, int y, int w, int h)
-    {
-        display.drawBox(x + X_OFFSET, y, w, h);
-    }
+    void drawBox(
+        int x,
+        int y,
+        int w,
+        int h
+    );
 
-    void drawHLine(int x, int y, int w)
-    {
-        display.drawHLine(x + X_OFFSET, y, w);
-    }
+    void drawHLine(
+        int x,
+        int y,
+        int w
+    );
 
-    void drawRBox(int x, int y, int w, int h, int r)
-    {
-        display.drawRBox(x + X_OFFSET, y, w, h, r);
-    }
+    void drawRBox(
+        int x,
+        int y,
+        int w,
+        int h,
+        int r
+    );
 
-    //---------------------------------------------------
+    //--------------------------------------------------
+    // Shared UI
+    //--------------------------------------------------
+
+    void drawHeader(
+        const char* title,
+        const ClockInfo& clock
+    );
+
+    void drawTimeBar(
+        const SongInfo& song
+    );
+
+    void drawIdleWeather(
+        const WeatherInfo& weather
+    );
+
+    //--------------------------------------------------
     // Helpers
-    //---------------------------------------------------
+    //--------------------------------------------------
 
     String fitText(
         const String& text,
@@ -107,10 +150,6 @@ private:
         int y,
         const String& text,
         const uint8_t* font
-    );
-
-    void drawTimeBar(
-        const SongInfo& song
     );
 };
 

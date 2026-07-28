@@ -14,6 +14,7 @@ private:
     ScreenType currentScreen;
 
     SongInfo currentSong;
+    IdleInfo currentIdle;
 
     MarqueeManager marquee;
 
@@ -21,10 +22,10 @@ public:
     ScreenManager();
 
     void setScreen(ScreenType screen);
-
     ScreenType getScreen();
 
     void setSong(const SongInfo& song);
+    void setIdleInfo(const IdleInfo& idle);
 
     void update();
 

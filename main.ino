@@ -2,11 +2,13 @@
 #include "NotificationManager.h"
 #include "ScreenManager.h"
 #include "SpotifyClient.h"
+#include "IdleManager.h"
 
 DisplayManager display;
 NotificationManager notifications;
 ScreenManager screen;
 SpotifyClient spotify;
+IdleManager idleManager;
 
 SongInfo song;
 
@@ -14,17 +16,19 @@ unsigned long lastFrame = 0;
 const uint16_t FRAME_TIME = 16;      // ~60 FPS
 
 // WiFi
-const char* WIFI_SSID = "WIFI_ID";
-const char* WIFI_PASSWORD = "WIFI_PASS";
+const char* WIFI_SSID = "KATARIA 4G";
+const char* WIFI_PASSWORD = "Sudha@123";
 
-// CHANGE THIS
-const char* SERVER_URL = "http://192.168.x.x:8000/spotify";
+// Backend URL
+const char* SERVER_URL = "http://192.168.1.33:8000/spotify";
 
 void setup()
 {
     Serial.begin(115200);
 
     display.begin();
+
+    idleManager.begin();
 
     spotify.begin(
         WIFI_SSID,
@@ -48,8 +52,6 @@ void setup()
     song.animatedProgress = 0;
 
     screen.setSong(song);
-
-    // ALWAYS PLAYER
     screen.setScreen(ScreenType::PLAYER);
 
     notifications.show(
@@ -66,7 +68,10 @@ void loop()
     {
         SongInfo newSong = spotify.getSong();
 
-        if (newSong.title != song.title)
+        if (
+            newSong.title != song.title ||
+            newSong.artist != song.artist
+        )
         {
             notifications.show(
                 "Now Playing",
@@ -74,7 +79,7 @@ void loop()
             );
         }
 
-        float target = 0;
+        float target = 0.0f;
 
         if (newSong.duration > 0)
         {
@@ -83,7 +88,7 @@ void loop()
                 (float)newSong.duration;
         }
 
-        // smoother animation
+        // Smooth progress animation
         song.animatedProgress +=
             (target - song.animatedProgress) * 0.08f;
 
@@ -99,6 +104,9 @@ void loop()
         song.currentLyric = newSong.currentLyric;
         song.nextLyric = newSong.nextLyric;
         song.hasLyrics = newSong.hasLyrics;
+
+        // Update idle timer
+        idleManager.update(song.playing);
     }
     else
     {
@@ -116,16 +124,25 @@ void loop()
         song.hasLyrics = false;
 
         song.animatedProgress *= 0.9f;
+
+        idleManager.update(false);
     }
 
     notifications.update();
 
     screen.setSong(song);
 
-    screen.update();
+    // Automatically switch screens
+    if (idleManager.isIdle())
+    {
+        screen.setScreen(ScreenType::IDLE);
+    }
+    else
+    {
+        screen.setScreen(ScreenType::PLAYER);
+    }
 
-    // NEVER SWITCH SCREENS
-    screen.setScreen(ScreenType::PLAYER);
+    screen.update();
 
     if (millis() - lastFrame >= FRAME_TIME)
     {

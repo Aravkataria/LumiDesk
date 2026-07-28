@@ -3,6 +3,10 @@
 
 #include <Arduino.h>
 
+//--------------------------------------------------
+// Screen Types
+//--------------------------------------------------
+
 enum class ScreenType
 {
     BOOT,
@@ -12,6 +16,10 @@ enum class ScreenType
     IDLE,
     ERROR_SCREEN
 };
+
+//--------------------------------------------------
+// Song Information
+//--------------------------------------------------
 
 struct SongInfo
 {
@@ -35,13 +43,67 @@ struct SongInfo
     // UI Animation
     float animatedProgress = 0.0f;
 
-    // Cached formatted time strings
+    // Cached formatted strings
     String elapsedText = "0:00";
     String durationText = "0:00";
 
-    // Display flags
+    // UI flags
     bool titleChanged = false;
     bool lyricChanged = false;
+};
+
+//--------------------------------------------------
+// Clock Information
+//--------------------------------------------------
+
+struct ClockInfo
+{
+    String time24 = "--:--";
+    String day = "--------";
+    String date = "-- --- ----";
+
+    bool synced = false;
+};
+
+//--------------------------------------------------
+// Weather Information
+//--------------------------------------------------
+
+struct WeatherInfo
+{
+    float temperature = 0.0f;
+    float feelsLike = 0.0f;
+
+    uint8_t humidity = 0;
+
+    String condition = "--";
+    String icon = "";
+
+    bool valid = false;
+
+    unsigned long lastUpdate = 0;
+};
+
+//--------------------------------------------------
+// Wi-Fi Information
+//--------------------------------------------------
+
+struct WiFiInfo
+{
+    bool connected = false;
+
+    int8_t signal = -100;
+};
+
+//--------------------------------------------------
+// Idle Screen Information
+//--------------------------------------------------
+
+struct IdleInfo
+{
+    ClockInfo clock;
+    WeatherInfo weather;
+    WiFiInfo wifi;
 };
 
 #endif
