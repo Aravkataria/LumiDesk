@@ -22,6 +22,7 @@ class MediaService:
             "title": "",
             "artist": "",
             "album": "",
+            "source": "Spotify",
 
             "duration": 0,
             "progress": 0,
@@ -33,6 +34,33 @@ class MediaService:
             "next_lyric": "",
             "has_lyrics": False
         }
+
+    # ------------------------------------------------
+    # Figure out what's actually playing the media -
+    # Spotify, YouTube (in a browser), or some other
+    # browser/app we can't identify further.
+    # ------------------------------------------------
+
+    def resolve_source(self, source_app_id):
+
+        app_id = (source_app_id or "").lower()
+
+        if "spotify" in app_id:
+            return "Spotify"
+
+        browser_names = {
+            "chrome": "Chrome",
+            "msedge": "Edge",
+            "firefox": "Firefox",
+            "brave": "Brave",
+            "opera": "Opera",
+        }
+
+        for key, name in browser_names.items():
+            if key in app_id:
+                return name
+
+        return "Media"
 
     # ------------------------------------------------
 
@@ -75,6 +103,7 @@ class MediaService:
                 self.song["title"] = "Nothing Playing"
                 self.song["artist"] = ""
                 self.song["album"] = ""
+                self.song["source"] = "Media"
                 self.song["progress"] = 0
                 self.song["duration"] = 0
                 self.song["current_lyric"] = ""
@@ -94,13 +123,25 @@ class MediaService:
                 "Unknown Title"
             )
 
-            artist = self.clean_text(
-                info.artist,
-                "Unknown Artist"
-            )
-
             album = self.clean_text(
                 info.album_title,
+                ""
+            )
+
+            try:
+                source_app_id = session.source_app_user_model_id
+            except Exception:
+                source_app_id = ""
+
+            source = self.resolve_source(source_app_id)
+
+            is_spotify = source == "Spotify"
+
+            # Show whatever creator name the site/app actually
+            # reports (e.g. a YouTube channel) - just don't fall
+            # back to a placeholder when there isn't one.
+            artist = self.clean_text(
+                info.artist,
                 ""
             )
 
@@ -117,25 +158,36 @@ class MediaService:
                 playback.playback_status.name == "PLAYING"
             )
 
-            current_key = f"{artist}::{title}"
+            # Synced lyrics only exist for actual songs on
+            # Spotify - LRCLIB has nothing for a YouTube video
+            # or a random site, so don't even try there.
+            if is_spotify:
 
-            if current_key != self.last_song:
+                current_key = f"{artist}::{title}"
 
-                self.last_song = current_key
+                if current_key != self.last_song:
 
-                print(
-                    f"Loading lyrics: {artist} - {title}"
-                )
+                    self.last_song = current_key
 
-                lyrics.fetch(
-                    title,
-                    artist
-                )
+                    print(
+                        f"Loading lyrics: {artist} - {title}"
+                    )
 
-            current, nxt, has = lyrics.current(progress)
+                    lyrics.fetch(
+                        title,
+                        artist
+                    )
 
-            current = self.clean_text(current)
-            nxt = self.clean_text(nxt)
+                current, nxt, has = lyrics.current(progress)
+
+                current = self.clean_text(current)
+                nxt = self.clean_text(nxt)
+
+            else:
+
+                # Reset so a future Spotify track re-triggers a fetch.
+                self.last_song = ""
+                current, nxt, has = "", "", False
 
             self.song.update({
 
@@ -144,6 +196,7 @@ class MediaService:
                 "title": title,
                 "artist": artist,
                 "album": album,
+                "source": source,
 
                 "duration": duration,
                 "progress": progress,

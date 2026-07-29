@@ -125,6 +125,9 @@ void SpotifyClient::update()
     currentSong.album =
         String((const char*)doc["album"]);
 
+    currentSong.source =
+        doc["source"] | "Spotify";
+
     currentSong.progress =
         doc["progress"] | 0;
 
