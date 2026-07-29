@@ -42,7 +42,12 @@ void ClockManager::refreshClock()
 {
     struct tm timeinfo;
 
-    if (!getLocalTime(&timeinfo))
+    // Default getLocalTime() timeout is 5000ms - if NTP hasn't
+    // synced yet it blocks the whole loop for 5 full seconds,
+    // and this gets called every second from update(), so it can
+    // stall boot for a long time. Passing 10ms makes it just
+    // check instantly and try again next tick instead.
+    if (!getLocalTime(&timeinfo, 10))
     {
         clock.synced = false;
         return;

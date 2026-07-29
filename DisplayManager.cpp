@@ -504,7 +504,7 @@ void DisplayManager::drawIdleWeather(
     {
         drawCenteredText(
             60,
-            "Waiting for weather...",
+            "Connecting...",
             u8g2_font_5x7_tf
         );
         return;

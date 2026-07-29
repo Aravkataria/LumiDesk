@@ -10,7 +10,12 @@ bool WeatherManager::begin(const String& url)
     weatherURL = url;
 
     ready = true;
-    lastRefresh = 0;   // Force immediate update
+
+    // Relies on unsigned wraparound: this makes the very next
+    // elapsed-time check in update() come out >= REFRESH_INTERVAL
+    // immediately, so the first fetch happens right away instead
+    // of silently waiting out the full 5-minute interval.
+    lastRefresh = millis() - REFRESH_INTERVAL;
 
     return true;
 }
