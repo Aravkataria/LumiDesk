@@ -27,6 +27,11 @@ public:
         uint8_t value
     );
 
+    void drawWipeMask(
+        int x,
+        int width
+    );
+
     int getTextWidth(const String& text);
 
     //--------------------------------------------------

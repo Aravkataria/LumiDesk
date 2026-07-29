@@ -97,34 +97,34 @@ void ScreenManager::update()
 
 void ScreenManager::draw(DisplayManager& display)
 {
-    if (transitionPhase != TransitionPhase::NONE)
+    drawCurrentScreen(display);
+
+    if (transitionPhase == TransitionPhase::NONE)
+        return;
+
+    float t = (float)(millis() - transitionStart) / (float)TRANSITION_HALF_MS;
+
+    if (t > 1.0f)
+        t = 1.0f;
+
+    float eased = easeOutQuad(t);
+
+    if (transitionPhase == TransitionPhase::FADE_OUT)
     {
-        float t = (float)(millis() - transitionStart) / (float)TRANSITION_HALF_MS;
-
-        if (t > 1.0f)
-            t = 1.0f;
-
-        uint8_t contrast;
-
-        if (transitionPhase == TransitionPhase::FADE_OUT)
-        {
-            // Starts bright, drops fast, tapers toward black.
-            contrast = (uint8_t)(255.0f * (1.0f - easeOutQuad(t)));
-        }
-        else
-        {
-            // Starts black, rises fast, tapers toward full contrast.
-            contrast = (uint8_t)(255.0f * easeOutQuad(t));
-        }
-
-        display.setContrast(contrast);
+        // Old screen is currently drawn above. Grow a black mask
+        // in from the left, erasing it left-to-right down to
+        // nothing (fully black) by the time this half ends.
+        int hidden = (int)(128.0f * eased);
+        display.drawWipeMask(0, hidden);
     }
     else
     {
-        display.setContrast(255);
+        // New screen is currently drawn above. Shrink the black
+        // mask away from the left, revealing it left-to-right -
+        // continues the same direction as the fade-out.
+        int revealed = (int)(128.0f * eased);
+        display.drawWipeMask(revealed, 128 - revealed);
     }
-
-    drawCurrentScreen(display);
 }
 
 void ScreenManager::drawCurrentScreen(DisplayManager& display)

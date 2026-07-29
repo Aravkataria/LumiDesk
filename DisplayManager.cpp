@@ -38,6 +38,16 @@ void DisplayManager::setContrast(uint8_t value)
     display.setContrast(value);
 }
 
+void DisplayManager::drawWipeMask(int x, int width)
+{
+    if (width <= 0)
+        return;
+
+    display.setDrawColor(0);
+    display.drawBox(x, 0, width, 64);
+    display.setDrawColor(1);
+}
+
 int DisplayManager::getTextWidth(const String& text)
 {
     display.setFont(u8g2_font_7x14B_tf);
@@ -450,17 +460,17 @@ void DisplayManager::drawPlayer(
     if(song.playing)
     {
         drawBox(
-            116,
-            44,
-            3,
-            12
+            118,
+            45,
+            2,
+            9
         );
 
         drawBox(
             123,
-            44,
-            3,
-            12
+            45,
+            2,
+            9
         );
     }
     else
@@ -490,43 +500,34 @@ void DisplayManager::drawPlayer(
 void DisplayManager::drawIdleWeather(
     const WeatherInfo& weather)
 {
-    display.setFont(
-        u8g2_font_6x12_tf
-    );
-
     if(!weather.valid)
     {
         drawCenteredText(
-            58,
+            60,
             "Waiting for weather...",
             u8g2_font_5x7_tf
         );
         return;
     }
 
-    char temp[16];
+    char line[24];
 
     snprintf(
-        temp,
-        sizeof(temp),
-        "%.0f C",
-        weather.temperature
+        line,
+        sizeof(line),
+        "%.0f C  %s",
+        weather.temperature,
+        weather.condition.c_str()
     );
 
     drawCenteredText(
-        50,
-        temp,
-        u8g2_font_6x12_tf
-    );
-
-    drawCenteredText(
-        62,
+        60,
         fitText(
-            weather.condition,
-            120,
-            u8g2_font_5x7_tf
+            line,
+            124,
+            u8g2_font_6x12_tf
         ),
-        u8g2_font_5x7_tf
+        u8g2_font_6x12_tf
     );
 }
 
@@ -553,13 +554,13 @@ void DisplayManager::drawIdle(
     );
 
     drawCenteredText(
-        40,
+        36,
         idle.clock.day,
         u8g2_font_6x12_tf
     );
 
     drawCenteredText(
-        52,
+        47,
         idle.clock.date,
         u8g2_font_5x7_tf
     );
