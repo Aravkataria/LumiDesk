@@ -346,7 +346,7 @@ void DisplayManager::drawPlayer(
     //--------------------------------------------------
 
     drawHeader(
-        "Spotify",
+        song.source.c_str(),
         clock
     );
 
@@ -381,73 +381,93 @@ void DisplayManager::drawPlayer(
     }
 
     //--------------------------------------------------
-    // Artist
+    // Artist (skipped entirely when there's no reliable
+    // creator name for this source - e.g. a random site)
     //--------------------------------------------------
 
-    display.setFont(
-        u8g2_font_5x7_tf
-    );
-
-    String artist =
-        fitText(
-            song.artist,
-            122,
+    if (song.artist.length() > 0)
+    {
+        display.setFont(
             u8g2_font_5x7_tf
         );
 
-    drawCenteredText(
-        38,
-        artist,
-        u8g2_font_5x7_tf
-    );
-
-    //--------------------------------------------------
-    // Divider
-    //--------------------------------------------------
-
-    drawHLine(
-        0,
-        42,
-        128
-    );
-
-    //--------------------------------------------------
-    // Lyrics
-    //--------------------------------------------------
-
-    display.setFont(
-        u8g2_font_6x12_tf
-    );
-
-    String lyric;
-
-    if(song.hasLyrics)
-    {
-        lyric =
+        String artist =
             fitText(
-                song.currentLyric,
-                110,
-                u8g2_font_6x12_tf
+                song.artist,
+                122,
+                u8g2_font_5x7_tf
             );
+
+        drawCenteredText(
+            38,
+            artist,
+            u8g2_font_5x7_tf
+        );
     }
-    else
+
+    //--------------------------------------------------
+    // Divider - only when the lyrics row below is going
+    // to show something (a real lyric, or the Spotify
+    // "no lyrics" placeholder). Otherwise there's nothing
+    // to separate from, so skip it.
+    //--------------------------------------------------
+
+    bool isSpotify = (song.source == "Spotify");
+    bool showLyricsRow = song.hasLyrics || isSpotify;
+
+    if (showLyricsRow)
     {
-        lyric = "No synced lyrics";
+        drawHLine(
+            0,
+            42,
+            128
+        );
     }
 
-    // Music icon
+    //--------------------------------------------------
+    // Lyrics - real songs (Spotify) always show a line,
+    // falling back to "No synced lyrics" when there isn't
+    // one yet. Anything else (YouTube, other sites) has no
+    // caption source at all, so it shows nothing rather
+    // than a placeholder.
+    //--------------------------------------------------
 
-    drawStr(
-        2,
-        54,
-        "\x99"
-    );
+    if (showLyricsRow)
+    {
+        display.setFont(
+            u8g2_font_6x12_tf
+        );
 
-    drawStr(
-        12,
-        54,
-        lyric.c_str()
-    );
+        String lyric;
+
+        if (song.hasLyrics)
+        {
+            lyric =
+                fitText(
+                    song.currentLyric,
+                    110,
+                    u8g2_font_6x12_tf
+                );
+        }
+        else
+        {
+            lyric = "No synced lyrics";
+        }
+
+        // Music icon
+
+        drawStr(
+            2,
+            54,
+            "\x99"
+        );
+
+        drawStr(
+            12,
+            54,
+            lyric.c_str()
+        );
+    }
 
     //--------------------------------------------------
     // Playback Indicator

@@ -79,8 +79,11 @@ void loop()
         SongInfo newSong = spotify.getSong();
 
         if (
-            newSong.title != song.title ||
-            newSong.artist != song.artist
+            newSong.active &&
+            (
+                newSong.title != song.title ||
+                newSong.artist != song.artist
+            )
         )
         {
             notifications.show(
