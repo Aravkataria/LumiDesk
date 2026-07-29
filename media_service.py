@@ -27,6 +27,7 @@ class MediaService:
             "progress": 0,
 
             "playing": False,
+            "active": False,
 
             "current_lyric": "",
             "next_lyric": "",
@@ -70,6 +71,7 @@ class MediaService:
             if session is None:
 
                 self.song["playing"] = False
+                self.song["active"] = False
                 self.song["title"] = "Nothing Playing"
                 self.song["artist"] = ""
                 self.song["album"] = ""
@@ -147,6 +149,7 @@ class MediaService:
                 "progress": progress,
 
                 "playing": playing,
+                "active": True,
 
                 "current_lyric": current,
                 "next_lyric": nxt,

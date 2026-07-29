@@ -2,11 +2,18 @@
 #include "NotificationManager.h"
 #include "ScreenManager.h"
 #include "SpotifyClient.h"
+#include "IdleManager.h"
+#include "ClockManager.h"
+#include "WeatherManager.h"
+#include "secrets.h"
 
 DisplayManager display;
 NotificationManager notifications;
 ScreenManager screen;
 SpotifyClient spotify;
+IdleManager idleManager;
+ClockManager clockManager;
+WeatherManager weatherManager;
 
 SongInfo song;
 
@@ -14,11 +21,12 @@ unsigned long lastFrame = 0;
 const uint16_t FRAME_TIME = 16;      // ~60 FPS
 
 // WiFi
-const char* WIFI_SSID = "WIFI_ID";
-const char* WIFI_PASSWORD = "WIFI_PASS";
+const char* WIFI_SSID = ENV_WIFI_SSID;
+const char* WIFI_PASSWORD = ENV_WIFI_PASSWORD;
 
-// CHANGE THIS
-const char* SERVER_URL = "http://192.168.x.x:8000/spotify";
+// Backend URL
+String spotifyUrl = String(SERVER_URL) + "/spotify";
+String weatherUrl = String(SERVER_URL) + "/weather";
 
 void setup()
 {
@@ -26,10 +34,16 @@ void setup()
 
     display.begin();
 
+    idleManager.begin();
+
+    clockManager.begin();
+
+    weatherManager.begin(weatherUrl);
+
     spotify.begin(
         WIFI_SSID,
         WIFI_PASSWORD,
-        SERVER_URL
+        spotifyUrl
     );
 
     song.title = "Connecting...";
@@ -48,8 +62,6 @@ void setup()
     song.animatedProgress = 0;
 
     screen.setSong(song);
-
-    // ALWAYS PLAYER
     screen.setScreen(ScreenType::PLAYER);
 
     notifications.show(
@@ -66,7 +78,10 @@ void loop()
     {
         SongInfo newSong = spotify.getSong();
 
-        if (newSong.title != song.title)
+        if (
+            newSong.title != song.title ||
+            newSong.artist != song.artist
+        )
         {
             notifications.show(
                 "Now Playing",
@@ -74,7 +89,7 @@ void loop()
             );
         }
 
-        float target = 0;
+        float target = 0.0f;
 
         if (newSong.duration > 0)
         {
@@ -83,7 +98,7 @@ void loop()
                 (float)newSong.duration;
         }
 
-        // smoother animation
+        // Smooth progress animation
         song.animatedProgress +=
             (target - song.animatedProgress) * 0.08f;
 
@@ -99,6 +114,12 @@ void loop()
         song.currentLyric = newSong.currentLyric;
         song.nextLyric = newSong.nextLyric;
         song.hasLyrics = newSong.hasLyrics;
+        song.active = newSong.active;
+
+        // active=false means there's no Spotify session at all
+        // (e.g. Spotify closed) - nothing to resume, so it goes
+        // straight to idle instead of waiting out the pause timer.
+        idleManager.update(song.playing, song.active);
     }
     else
     {
@@ -114,18 +135,36 @@ void loop()
 
         song.playing = false;
         song.hasLyrics = false;
+        song.active = false;
 
         song.animatedProgress *= 0.9f;
+
+        idleManager.update(false, false);
     }
 
     notifications.update();
 
+    clockManager.update();
+    weatherManager.update();
+
+    IdleInfo idle;
+    idle.clock = clockManager.getClock();
+    idle.weather = weatherManager.getWeather();
+
     screen.setSong(song);
+    screen.setIdleInfo(idle);
+
+    // Automatically switch screens
+    if (idleManager.isIdle())
+    {
+        screen.setScreen(ScreenType::IDLE);
+    }
+    else
+    {
+        screen.setScreen(ScreenType::PLAYER);
+    }
 
     screen.update();
-
-    // NEVER SWITCH SCREENS
-    screen.setScreen(ScreenType::PLAYER);
 
     if (millis() - lastFrame >= FRAME_TIME)
     {
