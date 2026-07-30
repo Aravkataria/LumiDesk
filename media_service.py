@@ -2,7 +2,7 @@ import asyncio
 import re
 import time
 import unicodedata
-
+import threading
 from unidecode import unidecode
 from winsdk.windows.media.control import (
     GlobalSystemMediaTransportControlsSessionManager as MediaManager
@@ -194,10 +194,13 @@ class MediaService:
                         f"Loading lyrics: {artist} - {title}"
                     )
 
-                    lyrics.fetch(
-                        title,
-                        artist
-                    )
+                    # Offload the slow network request to a background thread!
+                    # This lets the loop continue instantly and update the song title.
+                    threading.Thread(
+                        target=lyrics.fetch,
+                        args=(title, artist, album, duration // 1000),
+                        daemon=True
+                    ).start()
 
                 current, nxt, has = lyrics.current(progress)
 
