@@ -1,5 +1,6 @@
 import asyncio
 import re
+import time
 import unicodedata
 
 from unidecode import unidecode
@@ -12,9 +13,18 @@ from lyrics_service import lyrics
 
 class MediaService:
 
+    # Browsers commonly drop their media session for a moment right
+    # after pausing, even though the tab/video is still there. Give
+    # it this long before treating it as truly "nothing playing" -
+    # otherwise the idle screen jumps in instantly on every pause
+    # instead of going through the normal pause-timeout behavior.
+    SESSION_GRACE_SECONDS = 30
+
     def __init__(self):
 
         self.last_song = ""
+        self.last_source = "Media"
+        self.last_active_at = 0
 
         self.song = {
             "api_version": 2,
@@ -98,6 +108,12 @@ class MediaService:
 
             if session is None:
 
+                if time.time() - self.last_active_at < self.SESSION_GRACE_SECONDS:
+                    # Likely just a brief drop (e.g. paused in a
+                    # browser) - keep showing the last known state
+                    # so the normal pause-timeout can still run.
+                    return
+
                 self.song["playing"] = False
                 self.song["active"] = False
                 self.song["title"] = "Nothing Playing"
@@ -111,6 +127,8 @@ class MediaService:
                 self.song["has_lyrics"] = False
 
                 return
+
+            self.last_active_at = time.time()
 
             info = await session.try_get_media_properties_async()
 
@@ -130,10 +148,13 @@ class MediaService:
 
             try:
                 source_app_id = session.source_app_user_model_id
+                source = self.resolve_source(source_app_id)
+                self.last_source = source
             except Exception:
-                source_app_id = ""
-
-            source = self.resolve_source(source_app_id)
+                # A single failed read shouldn't wipe cached lyrics
+                # or misdetect Spotify as something else - just keep
+                # whatever we last resolved successfully.
+                source = self.last_source
 
             is_spotify = source == "Spotify"
 

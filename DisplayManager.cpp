@@ -351,6 +351,21 @@ void DisplayManager::drawPlayer(
     );
 
     //--------------------------------------------------
+    // Whether the lyrics row below will actually show
+    // anything - a real lyric, or the Spotify "no lyrics"
+    // placeholder. Everything else (YouTube, other sites
+    // with no captions) has nothing to put there, so the
+    // whole layout below the title shifts down to fill
+    // the space instead of leaving it empty.
+    //--------------------------------------------------
+
+    bool isSpotify = (song.source == "Spotify");
+    bool showLyricsRow = song.hasLyrics || isSpotify;
+
+    int artistY = showLyricsRow ? 38 : 44;
+    int dividerY = showLyricsRow ? 42 : 50;
+
+    //--------------------------------------------------
     // Song Title
     //--------------------------------------------------
 
@@ -399,7 +414,7 @@ void DisplayManager::drawPlayer(
             );
 
         drawCenteredText(
-            38,
+            artistY,
             artist,
             u8g2_font_5x7_tf
         );
@@ -412,14 +427,11 @@ void DisplayManager::drawPlayer(
     // to separate from, so skip it.
     //--------------------------------------------------
 
-    bool isSpotify = (song.source == "Spotify");
-    bool showLyricsRow = song.hasLyrics || isSpotify;
-
     if (showLyricsRow)
     {
         drawHLine(
             0,
-            42,
+            dividerY,
             128
         );
     }

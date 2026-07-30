@@ -163,6 +163,9 @@ void SpotifyClient::update()
 
     Serial.println(currentSong.artist);
 
+    Serial.print("Source: ");
+    Serial.println(currentSong.source);
+
     if (currentSong.hasLyrics)
     {
         Serial.print("♪ ");

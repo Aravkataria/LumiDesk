@@ -108,6 +108,7 @@ void loop()
         song.title = newSong.title;
         song.artist = newSong.artist;
         song.album = newSong.album;
+        song.source = newSong.source;
 
         song.progress = newSong.progress;
         song.duration = newSong.duration;
@@ -129,6 +130,7 @@ void loop()
         song.title = "Connecting...";
         song.artist = "Waiting for backend...";
         song.album = "";
+        song.source = "Media";
 
         song.currentLyric = "";
         song.nextLyric = "";
