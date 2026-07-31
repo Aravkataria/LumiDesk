@@ -26,6 +26,17 @@ class MediaService:
         self.last_source = "Media"
         self.last_active_at = 0
 
+        # --- Progress interpolation state ---
+        # Windows only refreshes the reported playback position every
+        # second or two internally, which makes progress (and anything
+        # matched against it, like lyrics) look laggy. Between actual
+        # OS updates, we advance the position ourselves using elapsed
+        # wall-clock time, then resync the instant a fresh OS reading
+        # comes in - so it's always accurate, just smoother in between.
+        self.last_raw_progress = -1
+        self.reference_progress = 0
+        self.reference_time = time.time()
+
         self.song = {
             "api_version": 2,
 
@@ -97,6 +108,37 @@ class MediaService:
         return text if text else fallback
 
     # ------------------------------------------------
+    # Blend the OS-reported position with wall-clock elapsed
+    # time so progress (and lyric matching) feels instant
+    # instead of waiting on Windows' own refresh rate.
+    # ------------------------------------------------
+
+    def interpolate_progress(self, raw_progress, duration, playing):
+
+        now = time.time()
+
+        if not playing:
+            self.last_raw_progress = raw_progress
+            self.reference_progress = raw_progress
+            self.reference_time = now
+            return raw_progress
+
+        if raw_progress != self.last_raw_progress:
+            # Windows gave us a fresh reading - trust it exactly and
+            # reset our interpolation reference point from here.
+            self.last_raw_progress = raw_progress
+            self.reference_progress = raw_progress
+            self.reference_time = now
+            return raw_progress
+
+        # No fresh OS reading yet this cycle - estimate how far playback
+        # has moved on using elapsed real time since the last known point.
+        elapsed_ms = (now - self.reference_time) * 1000
+        estimated = self.reference_progress + elapsed_ms
+
+        return int(min(estimated, duration))
+
+    # ------------------------------------------------
 
     async def update(self):
 
@@ -166,7 +208,7 @@ class MediaService:
                 ""
             )
 
-            progress = int(
+            raw_progress = int(
                 timeline.position.seconds * 1000
             )
 
@@ -177,6 +219,12 @@ class MediaService:
 
             playing = (
                 playback.playback_status.name == "PLAYING"
+            )
+
+            progress = self.interpolate_progress(
+                raw_progress,
+                duration,
+                playing
             )
 
             # Synced lyrics only exist for actual songs on

@@ -17,6 +17,17 @@ _kakasi = pykakasi.kakasi()
 class LyricsEngine:
     RETRY_COOLDOWN_SECONDS = 5
 
+    # Free synced-lyrics sources only give one timestamp per LINE,
+    # never per word. To get a word-by-word "karaoke" feel without
+    # real word-level timing data, we estimate each word's start time
+    # by splitting the line's duration proportionally across its
+    # words (longer words get a slightly bigger share). It's an
+    # approximation, but it updates far more often than showing a
+    # whole line for 3-4 seconds at a stretch, and it's just cheap
+    # arithmetic done once when the lyrics are fetched - no extra
+    # RAM or network cost per frame.
+    MIN_WORD_MS = 120
+
     def __init__(self):
         self.cached_song = ""
         self.parsed_lyrics = []
@@ -54,6 +65,23 @@ class LyricsEngine:
         if not m: return None
         return int(m.group(1)) * 60000 + int(m.group(2)) * 1000 + int(m.group(3)) * 10
 
+    def _split_words(self, text, start_ms, end_ms):
+        words = text.split()
+        if not words:
+            return []
+
+        total = max(end_ms - start_ms, self.MIN_WORD_MS * len(words))
+        weights = [len(w) + 1 for w in words]  # +1 so short words still get some time
+        weight_sum = sum(weights)
+
+        result = []
+        t = start_ms
+        for w, wt in zip(words, weights):
+            result.append({"time": t, "text": w})
+            t += max(self.MIN_WORD_MS, int(total * wt / weight_sum))
+
+        return result
+
     def fetch(self, title, artist, album="", duration=0):
         key = f"{artist}::{title}"
         now = time.time()
@@ -87,7 +115,8 @@ class LyricsEngine:
             self.resolved = True
             return
 
-        # 3. Parse and format the raw lyrics
+        # 3. Parse the raw line-level synced lyrics
+        raw_lines = []
         last_time = -1
         for line in raw_synced.splitlines():
             line = line.strip()
@@ -102,7 +131,28 @@ class LyricsEngine:
             
             lyric = self.clean_text(self.romanize(m.group(2).strip()))
             if lyric:
-                self.parsed_lyrics.append({"time": timestamp, "text": lyric})
+                raw_lines.append({"time": timestamp, "text": lyric})
+
+        # 4. Estimate per-word timing within each line using the gap
+        #    to the next line's start (or the track's end for the
+        #    last line) as that line's total duration.
+        duration_ms = max(duration * 1000, 0)
+        self.parsed_lyrics = []
+
+        for i, entry in enumerate(raw_lines):
+            start = entry["time"]
+            if i + 1 < len(raw_lines):
+                end = raw_lines[i + 1]["time"]
+            else:
+                end = max(start + 3000, duration_ms)
+
+            words = self._split_words(entry["text"], start, end)
+
+            self.parsed_lyrics.append({
+                "time": start,
+                "text": entry["text"],
+                "words": words
+            })
 
         self.has_lyrics = len(self.parsed_lyrics) > 0
         self.resolved = True
@@ -112,14 +162,42 @@ class LyricsEngine:
         if not self.has_lyrics:
             return ("No synced lyrics", "", False)
 
-        current, nxt = "", ""
+        # Find the current line.
+        line_idx = -1
         for i, line in enumerate(self.parsed_lyrics):
             if progress < line["time"]: break
-            current = line["text"]
-            if i + 1 < len(self.parsed_lyrics):
-                nxt = self.parsed_lyrics[i + 1]["text"]
+            line_idx = i
 
-        return (current[:28], nxt[:28], True)
+        if line_idx == -1:
+            return ("", "", True)
+
+        line = self.parsed_lyrics[line_idx]
+        words = line["words"]
+
+        if not words:
+            return (line["text"][:28], "", True)
+
+        # Find the current word within that line.
+        word_idx = 0
+        for i, w in enumerate(words):
+            if progress < w["time"]: break
+            word_idx = i
+
+        # Show the current word plus the next one - a small
+        # karaoke-style window instead of the whole line.
+        current_words = words[word_idx:word_idx + 2]
+        current_text = " ".join(w["text"] for w in current_words)
+
+        if word_idx + 2 < len(words):
+            next_words = words[word_idx + 2:word_idx + 4]
+            next_text = " ".join(w["text"] for w in next_words)
+        elif line_idx + 1 < len(self.parsed_lyrics):
+            next_line_words = self.parsed_lyrics[line_idx + 1]["words"]
+            next_text = " ".join(w["text"] for w in next_line_words[:2])
+        else:
+            next_text = ""
+
+        return (current_text[:28], next_text[:28], True)
 
 # Export the singleton
 lyrics = LyricsEngine()

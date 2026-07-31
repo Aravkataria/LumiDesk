@@ -457,7 +457,7 @@ void DisplayManager::drawPlayer(
             lyric =
                 fitText(
                     song.currentLyric,
-                    110,
+                    122,
                     u8g2_font_6x12_tf
                 );
         }
@@ -466,18 +466,14 @@ void DisplayManager::drawPlayer(
             lyric = "No synced lyrics";
         }
 
-        // Music icon
+        // Centered, karaoke-style - the icon is dropped here since a
+        // short centered word (or two) reads cleaner on its own than
+        // icon + left-aligned text.
 
-        drawStr(
-            2,
+        drawCenteredText(
             54,
-            "\x99"
-        );
-
-        drawStr(
-            12,
-            54,
-            lyric.c_str()
+            lyric,
+            u8g2_font_6x12_tf
         );
     }
 
