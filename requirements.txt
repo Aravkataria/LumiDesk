@@ -1,6 +1,19 @@
+# Backend (existing)
 fastapi
-uvicorn
+uvicorn[standard]
 spotipy
 python-dotenv
 requests
 Unidecode
+winsdk
+pycaw
+comtypes
+pykakasi
+korean-romanizer
+pypinyin
+
+# Desktop launcher (new)
+zeroconf
+pystray
+Pillow
+pyinstaller
