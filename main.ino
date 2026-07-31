@@ -29,13 +29,13 @@ String spotifyUrl = String(SERVER_URL) + "/spotify";
 String weatherUrl = String(SERVER_URL) + "/weather";
 String volumeUrl  = String(SERVER_URL) + "/volume";
 
-// --- Button (manual screen toggle: PLAYER <-> IDLE) ---
+// --- Button (temporary manual screen override) ---
 const int BUTTON_PIN = 25;
-bool manualIdleScreen = false;   // false = player, true = idle
+bool manualOverride = false;
+ScreenType manualScreen = ScreenType::PLAYER;
+unsigned long lastOverrideTime = 0;
+const unsigned long OVERRIDE_TIMEOUT = 8000; // ms the manual peek holds before auto takes back over
 
-// Debounce: rawReading is the noisy instantaneous pin state.
-// stableState is what we believe the button actually is, only
-// updated once rawReading has held steady for DEBOUNCE_MS.
 int rawReading = HIGH;
 int stableState = HIGH;
 unsigned long lastRawChangeTime = 0;
@@ -68,26 +68,28 @@ void handleButton()
 {
   int reading = digitalRead(BUTTON_PIN);
 
-  // Raw pin flickered - restart the debounce window, but do NOT
-  // touch stableState yet.
   if (reading != rawReading)
   {
     rawReading = reading;
     lastRawChangeTime = millis();
   }
 
-  // Raw reading has held steady long enough to trust it.
   if ((millis() - lastRawChangeTime) > DEBOUNCE_MS)
   {
     if (rawReading != stableState)
     {
       stableState = rawReading;
 
-      // This is a real, debounced press (HIGH -> LOW edge).
       if (stableState == LOW)
       {
-        manualIdleScreen = !manualIdleScreen;
-        Serial.println(manualIdleScreen ? "Button: -> IDLE" : "Button: -> PLAYER");
+        // Real, debounced press - peek at the other screen.
+        manualScreen = (screen.getScreen() == ScreenType::PLAYER)
+                         ? ScreenType::IDLE
+                         : ScreenType::PLAYER;
+        manualOverride = true;
+        lastOverrideTime = millis();
+        Serial.print("Button pressed -> manual screen: ");
+        Serial.println(manualScreen == ScreenType::IDLE ? "IDLE" : "PLAYER");
       }
     }
   }
@@ -237,8 +239,25 @@ void loop()
   screen.setSong(song);
   screen.setIdleInfo(idle);
 
-  // Screen is fully manual: the button toggles between PLAYER and IDLE.
-  screen.setScreen(manualIdleScreen ? ScreenType::IDLE : ScreenType::PLAYER);
+  // Automatic idle logic:
+  //  - song.active == false means there is NO media session at all
+  //    (every source closed) - go idle immediately, no need to wait
+  //    on IdleManager's pause-timer for this case.
+  //  - otherwise, fall back to IdleManager's existing pause-timeout
+  //    behavior (e.g. paused for 10 min while a session still exists).
+  // A button press temporarily overrides either of these to peek at
+  // the other screen, then control returns to automatic.
+  bool autoWantsIdle = (!song.active) || idleManager.isIdle();
+
+  if (manualOverride && (millis() - lastOverrideTime < OVERRIDE_TIMEOUT))
+  {
+    screen.setScreen(manualScreen);
+  }
+  else
+  {
+    manualOverride = false;
+    screen.setScreen(autoWantsIdle ? ScreenType::IDLE : ScreenType::PLAYER);
+  }
 
   screen.update();
 
