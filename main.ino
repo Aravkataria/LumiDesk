@@ -29,9 +29,12 @@ String spotifyUrl = String(SERVER_URL) + "/spotify";
 String weatherUrl = String(SERVER_URL) + "/weather";
 String volumeUrl  = String(SERVER_URL) + "/volume";
 
-// --- Button (manual screen toggle: PLAYER <-> IDLE) ---
+// --- Button (temporary manual screen override) ---
 const int BUTTON_PIN = 25;
-bool manualIdleScreen = false;   // false = player, true = idle
+bool manualOverride = false;
+ScreenType manualScreen = ScreenType::PLAYER;
+unsigned long lastOverrideTime = 0;
+const unsigned long OVERRIDE_TIMEOUT = 8000; // ms the manual choice holds before auto takes back over
 
 bool lastButtonState = HIGH;
 unsigned long lastDebounceTime = 0;
@@ -39,9 +42,29 @@ const unsigned long DEBOUNCE_MS = 50;
 
 // --- Potentiometer (volume) ---
 const int POT_PIN = 34;
-int lastVolume = -1;
+const int POT_SAMPLES = 16;       // oversample to average out ADC noise
+int lastSentVolume = -1;
+int pendingVolume = -1;           // last computed value, awaiting stability
+unsigned long pendingSince = 0;
+const unsigned long STABLE_MS = 300;   // value must hold steady this long before sending
+const int VOL_DEADBAND = 3;            // ignore changes smaller than this
 unsigned long lastVolPost = 0;
-const unsigned long VOL_POST_INTERVAL = 200; // ms, throttle HTTP calls
+const unsigned long VOL_POST_INTERVAL = 150;
+
+// --- Debug heartbeat ---
+unsigned long lastDebugPrint = 0;
+
+int readPotAveraged()
+{
+  long sum = 0;
+  for (int i = 0; i < POT_SAMPLES; i++)
+  {
+    sum += analogRead(POT_PIN);
+    delayMicroseconds(200);
+  }
+  int raw = sum / POT_SAMPLES;          // 0-4095, smoothed
+  return map(raw, 0, 4095, 0, 100);     // 0-100%
+}
 
 void handleButton()
 {
@@ -54,9 +77,14 @@ void handleButton()
   {
     if (reading == LOW && lastButtonState == HIGH)
     {
-      // button just pressed
-      manualIdleScreen = !manualIdleScreen;
-      Serial.println(manualIdleScreen ? "Button: -> IDLE" : "Button: -> PLAYER");
+      // button just pressed - flip whatever is currently showing
+      manualScreen = (screen.getScreen() == ScreenType::PLAYER)
+                       ? ScreenType::IDLE
+                       : ScreenType::PLAYER;
+      manualOverride = true;
+      lastOverrideTime = millis();
+      Serial.print("Button pressed -> manual screen: ");
+      Serial.println(manualScreen == ScreenType::IDLE ? "IDLE" : "PLAYER");
     }
   }
   lastButtonState = reading;
@@ -66,18 +94,29 @@ void handleVolume()
 {
   if (millis() - lastVolPost < VOL_POST_INTERVAL) return;
 
-  int raw = analogRead(POT_PIN);            // 0-4095
-  int volume = map(raw, 0, 4095, 0, 100);   // 0-100%
+  int volume = readPotAveraged();
 
-  if (abs(volume - lastVolume) >= 2)        // ignore ADC jitter
+  // Only reset the stability timer if the value moved meaningfully
+  if (pendingVolume < 0 || abs(volume - pendingVolume) >= VOL_DEADBAND)
+  {
+    pendingVolume = volume;
+    pendingSince = millis();
+    return;
+  }
+
+  // Value has been steady for STABLE_MS - safe to treat as a real turn
+  bool isStable = (millis() - pendingSince) >= STABLE_MS;
+  bool differsFromSent = (lastSentVolume < 0) || (abs(pendingVolume - lastSentVolume) >= VOL_DEADBAND);
+
+  if (isStable && differsFromSent)
   {
     HTTPClient http;
-    http.begin(volumeUrl + "?level=" + String(volume));
+    http.begin(volumeUrl + "?level=" + String(pendingVolume));
     int code = http.GET();
-    Serial.printf("Volume POST -> %d (HTTP %d)\n", volume, code);
+    Serial.printf("Volume POST -> %d (HTTP %d)\n", pendingVolume, code);
     http.end();
 
-    lastVolume = volume;
+    lastSentVolume = pendingVolume;
     lastVolPost = millis();
   }
 }
@@ -165,6 +204,9 @@ void loop()
     song.hasLyrics = newSong.hasLyrics;
     song.active = newSong.active;
 
+    // active=false means there's no Spotify session at all
+    // (e.g. Spotify closed) - nothing to resume, so it goes
+    // straight to idle instead of waiting out the pause timer.
     idleManager.update(song.playing, song.active);
   }
   else
@@ -191,15 +233,39 @@ void loop()
   handleButton();
   handleVolume();
 
+  // Heartbeat debug: prints raw button pin state and pot reading every
+  // 2s, so we can confirm the ESP32 is even seeing the wiring change -
+  // independent of any debounce/threshold logic above.
+  if (millis() - lastDebugPrint > 2000)
+  {
+    lastDebugPrint = millis();
+    Serial.printf(
+      "[debug] buttonPin=%d (0=pressed) potRaw=%d\n",
+      digitalRead(BUTTON_PIN),
+      analogRead(POT_PIN)
+    );
+  }
+
   IdleInfo idle;
   idle.clock = clockManager.getClock();
   idle.weather = weatherManager.getWeather();
   screen.setSong(song);
   screen.setIdleInfo(idle);
 
-  // Screen selection is now fully manual: the button toggles between
-  // PLAYER and IDLE. No automatic switching based on playback state.
-  screen.setScreen(manualIdleScreen ? ScreenType::IDLE : ScreenType::PLAYER);
+  // Screen selection: automatic idle/player switching runs by default.
+  // A button press temporarily overrides it (peek at the other screen),
+  // then control returns to automatic after OVERRIDE_TIMEOUT.
+  bool autoWantsIdle = idleManager.isIdle();
+
+  if (manualOverride && (millis() - lastOverrideTime < OVERRIDE_TIMEOUT))
+  {
+    screen.setScreen(manualScreen);
+  }
+  else
+  {
+    manualOverride = false;
+    screen.setScreen(autoWantsIdle ? ScreenType::IDLE : ScreenType::PLAYER);
+  }
 
   screen.update();
 
