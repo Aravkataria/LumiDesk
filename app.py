@@ -8,6 +8,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 import os
 
+from pycaw.pycaw import AudioUtilities
+from comtypes import CoInitialize, CoUninitialize
+
 from media_service import media
 
 API_VERSION = 2
@@ -68,6 +71,19 @@ def _fetch_weather():
         "icon": str(code),
         "valid": True,
     }
+
+
+# ----------------------------
+# Volume
+# ----------------------------
+
+def _get_volume_interface():
+    # Newer pycaw wraps the device in an AudioDevice object with an
+    # .EndpointVolume property, rather than exposing a raw COM
+    # Activate() call.
+    device = AudioUtilities.GetSpeakers()
+    return device.EndpointVolume
+
 
 app = FastAPI(
     title="Spotify OLED Backend",
@@ -137,6 +153,28 @@ def weather():
         pass
 
     return _weather_cache
+
+
+@app.get("/volume")
+def set_volume(level: int):
+
+    level = max(0, min(100, level))
+
+    # FastAPI runs sync routes in a thread pool - a fresh thread each
+    # time - and COM interfaces (which pycaw relies on) must be
+    # initialized per-thread, or GetSpeakers()/EndpointVolume can throw.
+    try:
+        CoInitialize()
+        volume = _get_volume_interface()
+        volume.SetMasterVolumeLevelScalar(level / 100.0, None)
+        return {"volume": level, "ok": True}
+    except Exception as e:
+        return {"volume": level, "ok": False, "error": str(e)}
+    finally:
+        try:
+            CoUninitialize()
+        except Exception:
+            pass
 
 
 @app.get("/health")
