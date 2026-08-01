@@ -1,16 +1,3 @@
-# PyInstaller spec for LumiDesk.exe
-#
-# Build from inside the project folder (the same folder as bootstrap.py,
-# app.py, config.py, etc.) with:
-#   pyinstaller lumidesk.spec
-#
-# Honest caveat: winsdk/pycaw/comtypes lean on Windows COM/WinRT, which
-# PyInstaller's static analysis doesn't always fully resolve on its own.
-# Treat the hiddenimports list below as a starting point — expect to run
-# the built exe, see an ImportError in the log
-# (%APPDATA%/LumiDesk/logs/lumidesk.log), add one more hidden import,
-# and rebuild, a few times before it's clean.
-
 from pathlib import Path
 from PyInstaller.utils.hooks import collect_all
 
