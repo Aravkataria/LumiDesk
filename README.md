@@ -130,13 +130,13 @@ Lyrics come from LRCLIB's public `/api/get` endpoint, matched by track + artist 
 
 ## Hardware Wiring
 
-LumiDesk runs on an ESP32 development board with a 0.96" SSD1306 OLED display. The project also supports a push button for screen interaction and a potentiometer for brightness control.
+LumiDesk runs on an ESP32 development board with a 0.96" SSD1306 OLED display. The project also supports a push button for screen interaction and a potentiometer for volume control.
 
 ### Components
 
 - ESP32 DevKit V4 (ESP-WROOM-32)
 - 0.96" SSD1306 OLED Display (I²C)
-- 10kΩ Potentiometer (Brightness Control)
+- 10kΩ Potentiometer (volume Control)
 - Push Button
 - Breadboard
 - Jumper Wires
@@ -202,7 +202,7 @@ LumiDesk runs on an ESP32 development board with a 0.96" SSD1306 OLED display. T
 ## Hardware Overview
 
 - **OLED Display** — Displays Spotify playback, synced lyrics, weather, clock, notifications, and menus.
-- **Potentiometer** — Adjusts display brightness in real time.
+- **Potentiometer** — Adjusts display volume in real time.
 - **Push Button** — Used for navigation and interaction.
 - **ESP32** — Connects to Wi-Fi and communicates with the LumiDesk desktop application.
 
