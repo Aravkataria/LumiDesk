@@ -192,10 +192,10 @@ LumiDesk runs on an **ESP32 DevKit V4 (ESP-WROOM-32)** paired with a **1.3-inch 
 ## Circuit Diagram
 
 <p align="center">
-    <img src="assets/circuit_image.png" width="850" alt="LumiDesk Circuit Diagram">
+    <img src="circuit_image.png" width="850" alt="LumiDesk Circuit Diagram">
 </p>
 
-> Place the circuit image in `assets/circuit_image.png`.
+> Place the circuit image in `circuit_image.png`.
 
 ---
 
