@@ -23,3 +23,5 @@ config.h
 
 obj/
 bin/
+
+config.json

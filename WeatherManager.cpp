@@ -46,6 +46,7 @@ bool WeatherManager::fetchWeather()
     HTTPClient http;
 
     http.begin(weatherURL);
+    http.addHeader("X-API-Key", API_KEY);
     http.setTimeout(5000);
 
     int code = http.GET();

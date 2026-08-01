@@ -24,6 +24,11 @@ const uint16_t FRAME_TIME = 16; // ~60 FPS
 const char* WIFI_SSID = ENV_WIFI_SSID;
 const char* WIFI_PASSWORD = ENV_WIFI_PASSWORD;
 
+// Backend auth — must match the "security.api_key" value LumiDesk's
+// tray shows via "Copy API key (for ESP setup)". Add
+// #define ENV_API_KEY "..." to secrets.h with that value.
+const char* API_KEY = ENV_API_KEY;
+
 // Backend URL
 String spotifyUrl = String(SERVER_URL) + "/spotify";
 String weatherUrl = String(SERVER_URL) + "/weather";
@@ -115,6 +120,7 @@ void handleVolume()
   {
     HTTPClient http;
     http.begin(volumeUrl + "?level=" + String(pendingVolume));
+    http.addHeader("X-API-Key", API_KEY);
     int code = http.GET();
     Serial.printf("Volume POST -> %d (HTTP %d)\n", pendingVolume, code);
     http.end();
@@ -228,45 +234,3 @@ void loop()
 
   notifications.update();
   clockManager.update();
-  weatherManager.update();
-
-  handleButton();
-  handleVolume();
-
-  IdleInfo idle;
-  idle.clock = clockManager.getClock();
-  idle.weather = weatherManager.getWeather();
-  screen.setSong(song);
-  screen.setIdleInfo(idle);
-
-  // Automatic idle logic:
-  //  - song.active == false means there is NO media session at all
-  //    (every source closed) - go idle immediately, no need to wait
-  //    on IdleManager's pause-timer for this case.
-  //  - otherwise, fall back to IdleManager's existing pause-timeout
-  //    behavior (e.g. paused for 10 min while a session still exists).
-  // A button press temporarily overrides either of these to peek at
-  // the other screen, then control returns to automatic.
-  bool autoWantsIdle = (!song.active) || idleManager.isIdle();
-
-  if (manualOverride && (millis() - lastOverrideTime < OVERRIDE_TIMEOUT))
-  {
-    screen.setScreen(manualScreen);
-  }
-  else
-  {
-    manualOverride = false;
-    screen.setScreen(autoWantsIdle ? ScreenType::IDLE : ScreenType::PLAYER);
-  }
-
-  screen.update();
-
-  if (millis() - lastFrame >= FRAME_TIME)
-  {
-    lastFrame = millis();
-    display.beginFrame();
-    screen.draw(display);
-    notifications.draw(display);
-    display.endFrame();
-  }
-}

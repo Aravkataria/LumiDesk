@@ -1,12 +1,20 @@
 #ifndef UI_MODELS_H
 #define UI_MODELS_H
-
+ 
 #include <Arduino.h>
-
+ 
+//--------------------------------------------------
+// Shared API key — defined once in main.ino from
+// secrets.h, sent as the X-API-Key header by every
+// HTTP request this firmware makes to the backend.
+//--------------------------------------------------
+ 
+extern const char* API_KEY;
+ 
 //--------------------------------------------------
 // Screen Types
 //--------------------------------------------------
-
+ 
 enum class ScreenType
 {
     BOOT,
@@ -16,11 +24,11 @@ enum class ScreenType
     IDLE,
     ERROR_SCREEN
 };
-
+ 
 //--------------------------------------------------
 // Song Information
 //--------------------------------------------------
-
+ 
 struct SongInfo
 {
     // Metadata
@@ -28,84 +36,84 @@ struct SongInfo
     String artist;
     String album;
     String source = "Spotify";
-
+ 
     // Lyrics
     String currentLyric;
     String nextLyric;
-
+ 
     bool hasLyrics = false;
-
+ 
     // Playback
     uint32_t duration = 0;
     uint32_t progress = 0;
-
+ 
     bool playing = false;
     bool active = false;   // false = no Spotify session at all (closed/nothing loaded)
-
+ 
     // UI Animation
     float animatedProgress = 0.0f;
-
+ 
     // Cached formatted strings
     String elapsedText = "0:00";
     String durationText = "0:00";
-
+ 
     // UI flags
     bool titleChanged = false;
     bool lyricChanged = false;
 };
-
+ 
 //--------------------------------------------------
 // Clock Information
 //--------------------------------------------------
-
+ 
 struct ClockInfo
 {
     String time24 = "--:--";
     String day = "--------";
     String date = "-- --- ----";
-
+ 
     bool synced = false;
 };
-
+ 
 //--------------------------------------------------
 // Weather Information
 //--------------------------------------------------
-
+ 
 struct WeatherInfo
 {
     float temperature = 0.0f;
     float feelsLike = 0.0f;
-
+ 
     uint8_t humidity = 0;
-
+ 
     String condition = "--";
     String icon = "";
-
+ 
     bool valid = false;
-
+ 
     unsigned long lastUpdate = 0;
 };
-
+ 
 //--------------------------------------------------
 // Wi-Fi Information
 //--------------------------------------------------
-
+ 
 struct WiFiInfo
 {
     bool connected = false;
-
+ 
     int8_t signal = -100;
 };
-
+ 
 //--------------------------------------------------
 // Idle Screen Information
 //--------------------------------------------------
-
+ 
 struct IdleInfo
 {
     ClockInfo clock;
     WeatherInfo weather;
     WiFiInfo wifi;
 };
-
+ 
 #endif

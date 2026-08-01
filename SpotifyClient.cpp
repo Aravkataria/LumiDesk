@@ -68,6 +68,8 @@ void SpotifyClient::update()
 
     http.begin(serverURL);
 
+    http.addHeader("X-API-Key", API_KEY);
+
     http.setTimeout(3000);
 
     int httpCode = http.GET();
