@@ -192,7 +192,7 @@ LumiDesk runs on an ESP32 development board with a 0.96" SSD1306 OLED display. T
 ## Circuit Diagram
 
 <p align="center">
-    <img src="assets/circuit_diagram.png" width="850" alt="LumiDesk Circuit Diagram">
+    <img src="circuit_diagram.png" width="850" alt="LumiDesk Circuit Diagram">
 </p>
 
 > Place the circuit image in `assets/circuit_diagram.png`.
