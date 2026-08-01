@@ -128,15 +128,15 @@ Every request now carries an `X-API-Key` header, checked by a FastAPI middleware
  
 Lyrics come from LRCLIB's public `/api/get` endpoint, matched by track + artist name — no API key required. The returned `syncedLyrics` block is parsed line-by-line into `{ time_ms, text }` pairs. On every backend tick, `lyrics_service.current(progress_ms)` walks that list to find the most recent line at-or-before the current playback position, plus whatever comes next — which is what gets serialized into `current_lyric` / `next_lyric` for the ESP32 to display.
 
-## Hardware Wiring
+# Hardware Wiring
 
-LumiDesk runs on an ESP32 development board with a 0.96" SSD1306 OLED display. The project also supports a push button for screen interaction and a potentiometer for volume control.
+LumiDesk runs on an **ESP32 DevKit V4 (ESP-WROOM-32)** paired with a **1.3-inch SSD1306 OLED display**. The hardware also includes a **push button** for interaction and a **10kΩ potentiometer** for real-time volume control.
 
-### Components
+## Components
 
 - ESP32 DevKit V4 (ESP-WROOM-32)
-- 0.96" SSD1306 OLED Display (I²C)
-- 10kΩ Potentiometer (volume Control)
+- 1.3" SSD1306 OLED Display (I²C)
+- 10kΩ Potentiometer (Volume Control)
 - Push Button
 - Breadboard
 - Jumper Wires
@@ -149,7 +149,7 @@ LumiDesk runs on an ESP32 development board with a 0.96" SSD1306 OLED display. T
 ### SSD1306 OLED Display
 
 | OLED Pin | ESP32 Pin | Function |
-|----------|-----------|----------|
+| :------: | :-------: | -------- |
 | GND | GND | Ground |
 | VCC | 3.3V | Power |
 | SCL | GPIO22 | I²C Clock |
@@ -160,7 +160,7 @@ LumiDesk runs on an ESP32 development board with a 0.96" SSD1306 OLED display. T
 ### Potentiometer
 
 | Potentiometer Pin | ESP32 Pin | Function |
-|-------------------|-----------|----------|
+| :---------------: | :-------: | -------- |
 | Left Pin | 3.3V | Power |
 | Middle Pin | GPIO34 | Analog Input |
 | Right Pin | GND | Ground |
@@ -170,7 +170,7 @@ LumiDesk runs on an ESP32 development board with a 0.96" SSD1306 OLED display. T
 ### Push Button
 
 | Button Pin | ESP32 Pin | Function |
-|------------|-----------|----------|
+| :--------: | :-------: | -------- |
 | One Side | GPIO25 | Button Input |
 | Other Side | GND | Ground |
 
@@ -179,7 +179,7 @@ LumiDesk runs on an ESP32 development board with a 0.96" SSD1306 OLED display. T
 ## Complete Wiring
 
 | ESP32 Pin | Connected To |
-|-----------|--------------|
+| :-------: | ------------ |
 | 3.3V | OLED VCC, Potentiometer Left Pin |
 | GND | OLED GND, Potentiometer Right Pin, Push Button |
 | GPIO21 | OLED SDA |
@@ -192,28 +192,33 @@ LumiDesk runs on an ESP32 development board with a 0.96" SSD1306 OLED display. T
 ## Circuit Diagram
 
 <p align="center">
-    <img src="circuit_image.png" width="850" alt="LumiDesk Circuit Diagram">
+    <img src="assets/circuit_image.png" width="850" alt="LumiDesk Circuit Diagram">
 </p>
 
-> Place the circuit image in `circuit_image.png`.
+> Place the circuit image in `assets/circuit_image.png`.
 
 ---
 
-## Hardware Overview
+# Hardware Overview
 
-- **OLED Display** — Displays Spotify playback, synced lyrics, weather, clock, notifications, and menus.
-- **Potentiometer** — Adjusts display volume in real time.
-- **Push Button** — Used for navigation and interaction.
-- **ESP32** — Connects to Wi-Fi and communicates with the LumiDesk desktop application.
+| Component | Purpose |
+|-----------|---------|
+| **1.3" OLED Display** | Displays Spotify playback, synced lyrics, weather, clock, notifications, and menus. |
+| **10kΩ Potentiometer** | Controls the system volume in real time. |
+| **Push Button** | Used for navigation and user interaction. |
+| **ESP32 DevKit V4** | Connects to Wi-Fi and communicates with the LumiDesk desktop application. |
 
-### Notes
+---
 
-- The OLED communicates using the I²C protocol.
-- GPIO21 is used for SDA.
-- GPIO22 is used for SCL.
-- GPIO34 is configured as an analog input for the potentiometer.
-- GPIO25 is configured as the push-button input.
-- The ESP32 is powered through USB.
+## Notes
+
+- The OLED communicates using the **I²C** protocol.
+- **GPIO21** is configured as the **SDA** line.
+- **GPIO22** is configured as the **SCL** line.
+- **GPIO34** is configured as the analog input for the potentiometer.
+- **GPIO25** is configured as the push-button input.
+- The ESP32 is powered via its USB connection.
+- Ensure all components share a common **GND** connection.
  
 ## Desktop Launcher
  
