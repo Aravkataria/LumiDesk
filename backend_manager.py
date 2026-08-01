@@ -23,27 +23,13 @@ class BackendManager:
         self.port = port
         self.api_key = api_key
         self.python_exe = python_exe or sys.executable
-        # When frozen by PyInstaller, sys.executable is LumiDesk.exe
-        # itself, not a real Python interpreter — "LumiDesk.exe -m
-        # uvicorn ..." would not work. Instead we re-launch the same
-        # exe with a hidden flag that bootstrap.py intercepts before
-        # doing anything else, and which runs uvicorn in-process in
-        # that child. See bootstrap.py's top-of-file argv check.
         self._frozen = getattr(sys, "frozen", False)
         self._process: subprocess.Popen | None = None
         self._watchdog_thread: threading.Thread | None = None
         self._stopping = threading.Event()
         self._restart_count = 0
         self._max_quick_restarts = 5  # guard against a crash-restart loop
-        # Set when the user explicitly clicks "Stop backend" — tells the
-        # watchdog "this is intentional, don't bring it back." Cleared by
-        # start()/restart(). Without this, there was no way to actually
-        # turn the backend off — the watchdog would just relaunch it.
         self._manual_stop = False
-        # Backend's own stdout/stderr (its actual tracebacks) go here —
-        # previously these were sent to DEVNULL, which is why a crash
-        # showed up in lumidesk.log only as "exited unexpectedly", with
-        # no way to see *why*.
         self.log_dir = log_dir or (project_root / "logs")
         self.log_dir.mkdir(parents=True, exist_ok=True)
         self.backend_log_path = self.log_dir / "backend.log"
