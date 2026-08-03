@@ -234,3 +234,45 @@ void loop()
 
   notifications.update();
   clockManager.update();
+  weatherManager.update();
+
+  handleButton();
+  handleVolume();
+
+  IdleInfo idle;
+  idle.clock = clockManager.getClock();
+  idle.weather = weatherManager.getWeather();
+  screen.setSong(song);
+  screen.setIdleInfo(idle);
+
+  // Automatic idle logic:
+  //  - song.active == false means there is NO media session at all
+  //    (every source closed) - go idle immediately, no need to wait
+  //    on IdleManager's pause-timer for this case.
+  //  - otherwise, fall back to IdleManager's existing pause-timeout
+  //    behavior (e.g. paused for 10 min while a session still exists).
+  // A button press temporarily overrides either of these to peek at
+  // the other screen, then control returns to automatic.
+  bool autoWantsIdle = (!song.active) || idleManager.isIdle();
+
+  if (manualOverride && (millis() - lastOverrideTime < OVERRIDE_TIMEOUT))
+  {
+    screen.setScreen(manualScreen);
+  }
+  else
+  {
+    manualOverride = false;
+    screen.setScreen(autoWantsIdle ? ScreenType::IDLE : ScreenType::PLAYER);
+  }
+
+  screen.update();
+
+  if (millis() - lastFrame >= FRAME_TIME)
+  {
+    lastFrame = millis();
+    display.beginFrame();
+    screen.draw(display);
+    notifications.draw(display);
+    display.endFrame();
+  }
+}
