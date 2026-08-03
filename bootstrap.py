@@ -4,16 +4,10 @@ import logging
 import socket
 import sys
 from pathlib import Path
- 
-# When frozen by PyInstaller, the backend source (app.py etc.) is
-# bundled as data files alongside the executable rather than on
-# sys.path automatically — this resolves both the dev (running from
-# source) and frozen cases the same way.
+
 if getattr(sys, "frozen", False):
     PROJECT_ROOT = Path(sys._MEIPASS)  # type: ignore[attr-defined]
 else:
-    # bootstrap.py lives in the SAME folder as app.py, not a nested
-    # desktop/ subfolder — so the project root is just this folder.
     PROJECT_ROOT = Path(__file__).resolve().parent
  
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -93,9 +87,6 @@ def main() -> None:
             "starting, or check %s for the underlying error.",
             log_file_path(config.config_dir),
         )
-        # Keep going rather than exit — the watchdog in BackendManager
-        # will keep retrying, and the tray still gives the user a way
-        # to see status and open logs.
  
     def on_ip_change(new_ip: str) -> None:
         logger.warning(

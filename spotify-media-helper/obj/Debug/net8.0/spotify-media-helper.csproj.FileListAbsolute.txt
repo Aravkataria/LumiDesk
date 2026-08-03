@@ -1,6 +1,0 @@
-C:\Users\DELL\Desktop\spotify-assistent\esp-code\main\spotify-media-helper\obj\Debug\net8.0\spotify-media-helper.csproj.AssemblyReference.cache
-C:\Users\DELL\Desktop\spotify-assistent\esp-code\main\spotify-media-helper\obj\Debug\net8.0\spotify-media-helper.GeneratedMSBuildEditorConfig.editorconfig
-C:\Users\DELL\Desktop\spotify-assistent\esp-code\main\spotify-media-helper\obj\Debug\net8.0\spotify-media-helper.AssemblyInfoInputs.cache
-C:\Users\DELL\Desktop\spotify-assistent\esp-code\main\spotify-media-helper\obj\Debug\net8.0\spotify-media-helper.AssemblyInfo.cs
-C:\Users\DELL\Desktop\spotify-assistent\esp-code\main\spotify-media-helper\obj\Debug\net8.0\spotify-media-helper.csproj.CoreCompileInputs.cache
-C:\Users\DELL\Desktop\spotify-assistent\esp-code\main\spotify-media-helper\obj\Debug\net8.0\spotify-media-helper.sourcelink.json
