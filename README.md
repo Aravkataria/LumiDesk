@@ -35,6 +35,7 @@ A small ESP32 + OLED display that mirrors whatever's currently playing on your P
     - [Marquee Scrolling](#marquee-scrolling)
     - [Track-Change Notifications](#track-change-notifications)
     - [Synced Lyrics](#synced-lyrics)
+    - [Idle Screen (Time & Weather)](#idle-screen-time--weather)
 12. [Future Enhancements](#future-enhancements)
 13. [Key Learnings](#key-learnings)
 14. [Installation Instructions](#installation-instructions)
@@ -56,7 +57,7 @@ The interesting part is *how* it gets the track info: rather than authenticating
  
 The system is two independent programs talking over local HTTP:
  
-1. **Capture stage:** the Python backend polls the Windows `GlobalSystemMediaTransportControlsSessionManager` every 500ms for the current track, position, and playback state.
+1. **Capture stage:** the Python backend polls the Windows `GlobalSystemMediaTransportControlsSessionManager` every 100ms for the current track, position, and playback state.
 2. **Enrichment stage:** when the track changes, the backend fetches time-synced lyrics for it from LRCLIB and caches them.
 3. **Serve stage:** FastAPI exposes the current song + current lyric line as JSON on `/spotify`.
 4. **Display stage:** the ESP32 polls that endpoint, smooths the progress bar toward the real value, and hands the song state to the screen/animation/marquee/notification managers to render at ~30fps.
@@ -91,6 +92,8 @@ Windows Media Session → media_service.py → lyrics_service.py (LRCLIB)
 - Marquee scrolling for titles/artists too long to fit on a 128px-wide screen.
 - Pop-up notification banner whenever the track changes.
 - Time-synced lyrics, advancing in step with playback position.
+- A second idle screen (clock, day/date, weather) that takes over automatically when nothing's playing, with a button to peek at it manually anytime.
+- Real-time system volume control via an onboard potentiometer.
 - No OAuth setup or cloud accounts required — everything runs on the local network.
 - Single-executable desktop launcher (`LumiDesk.exe`) — starts the backend, watches for crashes, and sits in the system tray with a settings window. No terminal required day-to-day.
 - API key authentication between the ESP and backend — only your own device can pull song/weather data, even from others on the same network.
@@ -102,22 +105,26 @@ The `.ino` file is intentionally thin — it just wires together a set of manage
  
 - **`SpotifyClient`** — connects to Wi-Fi, polls the backend's `/spotify` endpoint over plain HTTP, and parses the JSON response into a `SongInfo` struct.
 - **`DisplayManager`** — low-level wrapper around the SH1106 driver; handles frame begin/end.
-- **`ScreenManager`** — owns the current `SongInfo` state and decides what gets drawn each frame (player screen, connecting screen, etc.).
+- **`ScreenManager`** — owns the current `SongInfo`/`IdleInfo` state, decides what gets drawn each frame (player, idle, boot, loading, error), and runs the fade transition between screens.
 - **`AnimationManager`** — handles the eased progress bar and any transition animations.
 - **`MarqueeManager`** — scrolls text horizontally when it's wider than the screen.
 - **`NotificationManager`** — draws a temporary overlay banner (e.g. "Now Playing: <title>") that fades out after a track change.
-The main loop runs at a fixed ~30fps (`FRAME_TIME = 33ms`), polling the backend independently of the render loop so the display stays smooth even if a network request is slow.
+- **`ClockManager`** — syncs to NTP on boot and refreshes a local time/day/date once a second for the idle screen.
+- **`WeatherManager`** — polls the backend's `/weather` endpoint every 5 minutes and holds the latest temperature/condition reading.
+- **`IdleManager`** — decides when to switch to the idle (time & weather) screen: immediately if there's no media session at all, or after 10 minutes paused with a session still open.
+The main loop runs at a fixed ~60fps (`FRAME_TIME = 16ms`), polling the backend independently of the render loop so the display stays smooth even if a network request is slow.
  
 ### Backend Architecture
  
 - **`app.py`** — the FastAPI entrypoint. Starts a background thread running the media polling loop and exposes:
   - `GET /` — basic status
   - `GET /spotify` — current song JSON (title, artist, album, progress, duration, playing, current/next lyric line)
+  - `GET /weather` — current conditions for the idle screen (temperature, feels-like, humidity, condition), fetched from Open-Meteo and cached for 5 minutes
+  - `GET /volume?level=N` — sets PC system volume (0–100) via `pycaw`, used by the potentiometer
   - `GET /health` — lightweight health check
 - **`media_service.py`** — the core polling loop. On every tick it asks Windows for the current media session, reads title/artist/album/position/duration/playback state, and — if the track changed — triggers a lyrics fetch.
 - **`lyrics_service.py`** — queries LRCLIB for synced lyrics (`[mm:ss.xx]` formatted), parses them into a timestamp-indexed list, and exposes `current(progress_ms)` to look up the active + next line for a given playback position.
 - **`models.py`** — the `SongInfo` dataclass shape used internally.
-- **`routes/spotify.py`** — an alternate/legacy router-style endpoint for the same data, kept alongside the main `app.py` routes.
 ### Communication Protocol
  
 Plain HTTP GET, JSON body. The ESP32 does its own minimal HTTP parsing (splitting host/port/path out of the configured server URL) rather than pulling in a heavier HTTP client library, to keep flash usage down.
@@ -127,13 +134,20 @@ Every request now carries an `X-API-Key` header, checked by a FastAPI middleware
 ### Lyrics Sync
  
 Lyrics come from LRCLIB's public `/api/get` endpoint, matched by track + artist name — no API key required. The returned `syncedLyrics` block is parsed line-by-line into `{ time_ms, text }` pairs. On every backend tick, `lyrics_service.current(progress_ms)` walks that list to find the most recent line at-or-before the current playback position, plus whatever comes next — which is what gets serialized into `current_lyric` / `next_lyric` for the ESP32 to display.
-
-# Hardware Wiring
-
+ 
+## Hardware Wiring
+ 
 LumiDesk runs on an **ESP32 DevKit V4 (ESP-WROOM-32)** paired with a **1.3-inch SSD1306 OLED display**. The hardware also includes a **push button** for interaction and a **10kΩ potentiometer** for real-time volume control.
-
-## Components
-
+ 
+| Component | Purpose |
+|-----------|---------|
+| **1.3" OLED Display** | Displays playback, synced lyrics, weather, clock, notifications, and menus. |
+| **10kΩ Potentiometer** | Controls the system volume in real time. |
+| **Push Button** | Used for navigation and user interaction. |
+| **ESP32 DevKit V4** | Connects to Wi-Fi and communicates with the LumiDesk desktop application. |
+ 
+### Components
+ 
 - ESP32 DevKit V4 (ESP-WROOM-32)
 - 1.3" SSD1306 OLED Display (I²C)
 - 10kΩ Potentiometer (Volume Control)
@@ -141,43 +155,42 @@ LumiDesk runs on an **ESP32 DevKit V4 (ESP-WROOM-32)** paired with a **1.3-inch 
 - Breadboard
 - Jumper Wires
 - USB Cable
-
 ---
-
-## Pin Connections
-
+ 
+### Pin Connections
+ 
 ### SSD1306 OLED Display
-
+ 
 | OLED Pin | ESP32 Pin | Function |
 | :------: | :-------: | -------- |
 | GND | GND | Ground |
 | VCC | 3.3V | Power |
 | SCL | GPIO22 | I²C Clock |
 | SDA | GPIO21 | I²C Data |
-
+ 
 ---
-
+ 
 ### Potentiometer
-
+ 
 | Potentiometer Pin | ESP32 Pin | Function |
 | :---------------: | :-------: | -------- |
 | Left Pin | 3.3V | Power |
 | Middle Pin | GPIO34 | Analog Input |
 | Right Pin | GND | Ground |
-
+ 
 ---
-
+ 
 ### Push Button
-
+ 
 | Button Pin | ESP32 Pin | Function |
 | :--------: | :-------: | -------- |
 | One Side | GPIO25 | Button Input |
 | Other Side | GND | Ground |
-
+ 
 ---
-
-## Complete Wiring
-
+ 
+### Complete Wiring
+ 
 | ESP32 Pin | Connected To |
 | :-------: | ------------ |
 | 3.3V | OLED VCC, Potentiometer Left Pin |
@@ -186,32 +199,20 @@ LumiDesk runs on an **ESP32 DevKit V4 (ESP-WROOM-32)** paired with a **1.3-inch 
 | GPIO22 | OLED SCL |
 | GPIO34 | Potentiometer Middle Pin |
 | GPIO25 | Push Button |
-
+ 
 ---
-
-## Circuit Diagram
-
+ 
+### Circuit Diagram
+ 
 <p align="center">
     <img src="circuit_image.png" width="850" alt="LumiDesk Circuit Diagram">
 </p>
-
 > Place the circuit image in `circuit_image.png`.
-
+ 
 ---
-
-# Hardware Overview
-
-| Component | Purpose |
-|-----------|---------|
-| **1.3" OLED Display** | Displays Spotify playback, synced lyrics, weather, clock, notifications, and menus. |
-| **10kΩ Potentiometer** | Controls the system volume in real time. |
-| **Push Button** | Used for navigation and user interaction. |
-| **ESP32 DevKit V4** | Connects to Wi-Fi and communicates with the LumiDesk desktop application. |
-
----
-
-## Notes
-
+ 
+### Notes
+ 
 - The OLED communicates using the **I²C** protocol.
 - **GPIO21** is configured as the **SDA** line.
 - **GPIO22** is configured as the **SCL** line.
@@ -344,7 +345,7 @@ The core screen shows title, artist, and album, refreshed every backend poll cyc
  
 Rather than snapping straight to the real playback position (which would look jittery given the 500ms poll interval), `AnimationManager` eases the displayed progress toward the target value each frame:
 ```cpp
-song.animatedProgress += (targetProgress - song.animatedProgress) * 0.15f;
+song.animatedProgress += (targetProgress - song.animatedProgress) * 0.08f;
 ```
 This gives a smooth, continuously-moving bar even though the underlying data only updates twice a second.
  
@@ -359,6 +360,12 @@ Whenever `SpotifyClient` detects the title has changed since the last poll, `Not
 ### Synced Lyrics
  
 When lyrics are available for the current track, the current and next line are shown alongside the track info, advancing automatically as `lyrics_service.current()` reruns against the live playback position on the backend.
+ 
+### Idle Screen (Time & Weather)
+ 
+When there's nothing to show on the player screen, LumiDesk switches to a second screen instead of going blank: a large NTP-synced clock, the day and date, and the current weather (temperature + condition) pulled from the backend's `/weather` endpoint. `ScreenManager` fades between the two screens rather than cutting instantly.
+ 
+It switches automatically — immediately if there's no media session at all (nothing open anywhere), or after 10 minutes if something's just paused — and you can also peek at it manually at any time with the push button, which holds the override for 8 seconds before handing control back to the automatic logic.
  
 ## Future Enhancements
  
@@ -376,6 +383,7 @@ When lyrics are available for the current track, the current and next line are s
 ## Installation Instructions
  
 ```bash
+ 
 # 1. Clone the repository
 git clone https://github.com/Aravkataria/LumiDesk.git
 cd LumiDesk
@@ -387,14 +395,18 @@ pip install -r requirements.txt
  
 # 3a. Run it via the desktop launcher (tray icon, no terminal left open)
 python bootstrap.py
+ 
 # ...or build LumiDesk.exe:
+ 
 #   pip install pyinstaller && pyinstaller lumidesk_flat.spec
  
 # 3b. ...or run the backend directly instead
 uvicorn app:app --host 0.0.0.0 --port 8000 --reload
  
 # 4. Add secrets.h (gitignored, not included) with your Wi-Fi
+ 
 #    credentials and the API key from the tray's "Copy API key" option,
+ 
 #    then flash main.ino to the ESP32 via the Arduino IDE
 ```
  
@@ -405,5 +417,6 @@ uvicorn app:app --host 0.0.0.0 --port 8000 --reload
 - Lyrics availability depends entirely on LRCLIB's database — not every track will have synced lyrics.
 - API key auth keeps other devices on your network from reading `/spotify` or `/weather`, but it doesn't hide that the port is open — someone could still see a service is listening there, just not get data back without the key.
 - If the backend's local IP changes (new router, DHCP lease expiry), the ESP won't know — `SERVER_URL` is baked in at flash time, so that means a DHCP reservation or a re-flash, not something the desktop launcher can fix on its own.
+- `LumiDesk.exe` isn't distributed through this repo — build it yourself with `pyinstaller lumidesk_flat.spec` (see [Desktop Launcher](#desktop-launcher)). A compiled binary doesn't belong in git history, and it'd need to be rebuilt per-machine anyway since PyInstaller bakes in Windows/Python-version-specific bits., the ESP won't know — `SERVER_URL` is baked in at flash time, so that means a DHCP reservation or a re-flash, not something the desktop launcher can fix on its own.
 - `LumiDesk.exe` isn't distributed through this repo — build it yourself with `pyinstaller lumidesk_flat.spec` (see [Desktop Launcher](#desktop-launcher)). A compiled binary doesn't belong in git history, and it'd need to be rebuilt per-machine anyway since PyInstaller bakes in Windows/Python-version-specific bits.
  
