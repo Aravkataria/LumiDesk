@@ -13,10 +13,6 @@ public:
 
     DisplayManager();
 
-    //--------------------------------------------------
-    // Displayc:\Users\DELL\Desktop\spotify-assistent\esp-code\main\DisplayManager.cpp
-    //--------------------------------------------------
-
     void begin();
 
     void beginFrame();
