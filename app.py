@@ -3,8 +3,9 @@ import threading
 import time
 
 import requests
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from dotenv import load_dotenv
 import os
 
@@ -21,6 +22,7 @@ API_VERSION = 2
 load_dotenv()
 WEATHER_LAT = os.getenv("LAT")
 WEATHER_LON = os.getenv("LON")
+API_KEY = os.getenv("API_KEY")
 
 WEATHER_CACHE_SECONDS = 300   # matches the 5-min refresh in WeatherManager
 
@@ -97,6 +99,22 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.middleware("http")
+async def require_api_key(request: Request, call_next):
+    # If no key is configured (e.g. running `python app.py` directly
+    # without the desktop launcher, which is what generates and writes
+    # it via config.py), skip the check rather than locking everyone
+    # out. Don't rely on that as your only protection in that case.
+    if API_KEY:
+        provided = request.headers.get("X-API-Key")
+        if provided != API_KEY:
+            return JSONResponse(
+                status_code=401,
+                content={"detail": "Missing or invalid X-API-Key header"},
+            )
+    return await call_next(request)
 
 
 # ----------------------------
